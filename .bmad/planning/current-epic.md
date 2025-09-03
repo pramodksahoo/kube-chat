@@ -1,56 +1,60 @@
-# Epic: Foundation Infrastructure
+# Current Epic: Epic 1 - Core Natural Language Processing Foundation
+
+## Epic Status
+**Status:** Ready to Start  
+**Priority:** P0 (Critical - Foundation Epic)  
+**Estimated Duration:** 6-8 weeks  
+**Dependencies:** None (foundational epic)
 
 ## Epic Overview
-Establish the basic Kubernetes operator foundation that will serve as the platform for all future KubeChat functionality.
+Establish the fundamental natural language to kubectl command translation capability with basic safety controls and user confirmation workflows.
 
-## Epic Goals
-1. Create a working Kubernetes operator that can be deployed
-2. Define core Custom Resource Definitions (CRDs)
-3. Implement basic controller logic
-4. Establish development and testing workflows
-5. Create foundation for NLP integration
-
-## Epic Scope
-**Included in this Epic:**
-- Kubernetes operator skeleton
-- ChatSession CRD definition
-- Basic controller with reconciliation loop
-- RBAC configuration
-- Helm chart for deployment
-- Unit and integration test framework
-- Development documentation
-
-**Not Included (Future Epics):**
-- Advanced NLP processing
-- Knowledge graph implementation
-- Web interface
-- CLI tools
-- Production optimization
-
-## Success Criteria
-- [ ] Operator deploys successfully on any Kubernetes cluster
-- [ ] ChatSession resources can be created and managed
-- [ ] Controller responds to ChatSession changes
-- [ ] All tests pass with >80% coverage
-- [ ] Helm chart installs without errors
-- [ ] Documentation is complete and accurate
+## Key Deliverables
+- Natural language processing service architecture
+- kubectl command translation engine with 90%+ accuracy
+- Safety assessment and risk categorization (SAFE/CAUTION/DESTRUCTIVE)
+- Command preview and confirmation workflows
+- Basic error handling and user feedback
+- Integration with Kubernetes operator framework
 
 ## Stories in This Epic
-1. **Story 1**: Project initialization and basic operator setup
-2. **Story 2**: ChatSession CRD definition and validation
-3. **Story 3**: Controller implementation with reconciliation logic
-4. **Story 4**: RBAC and security configuration
-5. **Story 5**: Testing framework and initial tests
-6. **Story 6**: Helm chart creation and deployment validation
+1. **Story 1.1:** Natural Language Query Translation (8 points)
+2. **Story 1.2:** Write Operation Safety Controls (5 points) 
+3. **Story 1.3:** Command Execution and Results Display (5 points)
+4. **Story 1.4:** Conversational Context Support (8 points)
+5. **Story 1.5:** Basic Error Handling and Recovery (3 points)
 
-## Estimated Timeline
-4 weeks total (1 story per week, with testing and refinement)
+**Total Story Points:** 29 points
 
-## Dependencies
-- None (this is the foundational epic)
+## Technology Stack
+- **Backend:** Go-based microservice with gRPC and REST APIs
+- **NLP Engine:** OpenAI API integration with local Ollama fallback option
+- **Kubernetes Integration:** controller-runtime framework with custom resources
+- **Data Storage:** In-memory caching for session state
 
-## Risk Mitigation
-- Start with minimal viable implementation
-- Focus on working code over complex features
-- Establish testing early to catch issues
-- Document all architectural decisions
+## Success Criteria
+- [ ] Natural language queries translate to correct kubectl commands with 90%+ accuracy
+- [ ] All write operations require explicit user confirmation
+- [ ] Command execution provides clear feedback and results formatting
+- [ ] Conversational context is maintained within sessions
+- [ ] Error handling provides actionable feedback to users
+
+## Next Steps
+1. Start with Epic 1 development
+2. Existing code in the repository can be referenced/reused where applicable
+3. Developers will evaluate existing Go operator code for foundation
+4. Epic 2 (Authentication) can begin parallel development after Story 1.1 completion
+
+## Dependencies for Future Epics
+- **Epic 2:** Will integrate with session management for user authentication
+- **Epic 3:** Will capture all command translation and execution events for audit
+- **Epic 4:** Will consume NLP service APIs for web interface
+- **Epic 5-8:** Will build upon this foundation for advanced features
+
+## Development Notes
+The existing codebase contains:
+- Go operator framework setup (`/cmd/operator/`, `/pkg/`, `/api/v1/`)
+- React frontend foundation (`/web/`)
+- Basic testing infrastructure
+
+Developers should evaluate existing code for reusability while ensuring it aligns with Epic 1 requirements and architecture specifications.

@@ -1,0 +1,123 @@
+# Go specific
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+cover.out
+coverage.out
+
+# Go workspace file
+go.work
+
+# Build artifacts
+/bin/
+/dist/
+kube-chat
+nlp-service
+
+# Vendor directory
+/vendor/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+/tmp/
+/temp/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Kubernetes specific
+kubeconfig
+*.kubeconfig
+kube-config
+.kube/config
+secrets/
+*-secret.yaml
+*-secrets.yaml
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# Helm
+charts/*.tgz
+charts/*/charts/
+charts/*/requirements.lock
+
+# Build tools
+Makefile.local
+.make/
+
+# Documentation builds
+/docs/_build/
+/docs/site/
+
+# Testing
+.coverage
+.nyc_output
+coverage/
+htmlcov/
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+flattened-codebase.xml
+
+# BMAD temporary artifacts
+.bmad-core/
+.bmad/tmp/
+.bmad/cache/
+
+# Local development
+local/
+scratch/
+sandbox/
+
+# Certificate files (but keep sample/template ones)
+*.pem
+*.key
+*.crt
+*.cert
+!*-template.*
+!*-sample.*
+
+# Local configuration overrides
+*-local.yaml
+*-local.yml
+config/local/
