@@ -3,7 +3,7 @@
 ## Complete Directory Structure
 
 ```
-kubechat/
+kube-chat/
 ├── .github/                    # CI/CD workflows
 │   └── workflows/
 │       ├── ci.yaml             # Build and test pipeline

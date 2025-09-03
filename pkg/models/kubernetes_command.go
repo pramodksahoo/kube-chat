@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,9 +39,12 @@ type KubernetesResource struct {
 
 // CommandExecutionResult represents the result of command execution
 type CommandExecutionResult struct {
-	ExitCode int    `json:"exitCode"`
-	Output   string `json:"output"`
-	Error    string `json:"error,omitempty"`
+	Success         bool   `json:"success"`
+	Output          string `json:"output"`
+	Error           string `json:"error,omitempty"`
+	ExitCode        int    `json:"exitCode"`
+	ExecutionTime   int    `json:"executionTime"`   // in milliseconds
+	FormattedOutput string `json:"formattedOutput"` // Human-readable with syntax highlighting
 }
 
 // KubernetesCommand represents a kubectl command with metadata and safety analysis
@@ -96,3 +100,42 @@ func (kc *KubernetesCommand) UpdateStatus(status CommandStatus) {
 		kc.ExecutedAt = &now
 	}
 }
+
+// ToJSON serializes the CommandExecutionResult to JSON bytes
+func (cer *CommandExecutionResult) ToJSON() ([]byte, error) {
+	return json.Marshal(cer)
+}
+
+// FromJSON deserializes JSON bytes to CommandExecutionResult
+func (cer *CommandExecutionResult) FromJSON(data []byte) error {
+	return json.Unmarshal(data, cer)
+}
+
+// NewCommandExecutionResult creates a new CommandExecutionResult with default values
+func NewCommandExecutionResult(success bool, output, error string, exitCode, executionTime int) *CommandExecutionResult {
+	return &CommandExecutionResult{
+		Success:         success,
+		Output:          output,
+		Error:           error,
+		ExitCode:        exitCode,
+		ExecutionTime:   executionTime,
+		FormattedOutput: formatBasicOutput(success, output, error),
+	}
+}
+
+// formatBasicOutput provides basic formatting for CommandExecutionResult
+func formatBasicOutput(success bool, output, error string) string {
+	if success {
+		if output == "" {
+			return "✅ Command executed successfully (no output)"
+		}
+		return "✅ " + output
+	} else {
+		result := "❌ Error: " + error
+		if output != "" {
+			result += "\n\nOutput:\n" + output
+		}
+		return result
+	}
+}
+

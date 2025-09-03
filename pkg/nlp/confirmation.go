@@ -143,3 +143,23 @@ func (cm *ConfirmationManager) GetPendingCommandsCount() int {
 
 	return len(cm.pendingCommands)
 }
+
+// UpdateCommand updates a command in the manager (Story 1.3)
+func (cm *ConfirmationManager) UpdateCommand(command *models.KubernetesCommand) error {
+	if command == nil {
+		return fmt.Errorf("command cannot be nil")
+	}
+
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+
+	// If command is completed or failed, we can remove it from pending
+	if command.Status == models.CommandStatusCompleted || command.Status == models.CommandStatusFailed {
+		delete(cm.pendingCommands, command.ID)
+	} else {
+		// Keep it in pending for status tracking
+		cm.pendingCommands[command.ID] = command
+	}
+
+	return nil
+}

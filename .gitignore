@@ -103,7 +103,7 @@ flattened-codebase.xml
 .bmad-core/
 .bmad/tmp/
 .bmad/cache/
-
+.bmad/
 # Local development
 local/
 scratch/
