@@ -2,7 +2,7 @@
 
 ## Epic Overview
 
-**Epic Goal:** Enable seamless integration with enterprise infrastructure including monitoring, secrets management, and deployment automation
+**Epic Goal:** Enable seamless Helm-based deployment with enterprise infrastructure integration including monitoring, secrets management, and air-gap capability
 
 **Value Proposition:** Provide enterprise-ready deployment and integration capabilities that work seamlessly with existing organizational infrastructure and operational procedures.
 

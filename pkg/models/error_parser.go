@@ -503,8 +503,8 @@ func (ep *ErrorParser) detectMalformedNLP(input string) *KubectlError {
 
 	// Common typos or gibberish patterns
 	gibberishPatterns := []string{
-		`^[qwerty]+$`,     // keyboard mashing
-		`^[asdfgh]+$`,     // more keyboard mashing
+		`^[qwerty0-9]+$`,  // keyboard mashing with numbers
+		`^[asdfgh0-9]+$`,  // more keyboard mashing with numbers
 		`^[0-9]+$`,        // only numbers
 		`[!@#$%^&*()]+`,   // excessive special characters
 	}

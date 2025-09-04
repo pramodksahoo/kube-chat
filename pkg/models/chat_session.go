@@ -28,17 +28,18 @@ type ChatMessage struct {
 
 // ChatSession represents a conversational chat session with command execution history
 type ChatSession struct {
-	ID             string          `json:"id"`
-	UserID         string          `json:"userId"`
-	ClusterContext string          `json:"clusterContext"`
-	Namespace      string          `json:"namespace"`
-	Messages       []ChatMessage   `json:"messages"`
-	Commands       []string        `json:"commands"`       // Command IDs for execution history
-	Status         SessionStatus   `json:"status"`
-	CreatedAt      time.Time       `json:"createdAt"`
-	LastActivity   time.Time       `json:"lastActivity"`
-	ExpiresAt      time.Time       `json:"expiresAt"`
-	ContextData    *SessionContext `json:"contextData,omitempty"` // NEW: Conversational context
+	ID             string               `json:"id"`
+	UserID         string               `json:"userId"`
+	ClusterContext string               `json:"clusterContext"`
+	Namespace      string               `json:"namespace"`
+	Messages       []ChatMessage        `json:"messages"`
+	Commands       []string             `json:"commands"`       // Command IDs for execution history
+	Status         SessionStatus        `json:"status"`
+	CreatedAt      time.Time            `json:"createdAt"`
+	LastActivity   time.Time            `json:"lastActivity"`
+	ExpiresAt      time.Time            `json:"expiresAt"`
+	ContextData    *SessionContext      `json:"contextData,omitempty"`    // Conversational context
+	AuthContext    *SessionAuthContext  `json:"authContext,omitempty"`    // NEW: Authentication context
 }
 
 // NewChatSession creates a new chat session with default values
@@ -274,4 +275,195 @@ func (cs *ChatSession) GetContextSummary() map[string][]string {
 	}
 	
 	return cs.ContextData.GetAvailableReferences()
+}
+
+// Authentication context methods
+
+// SetAuthContext sets the authentication context for the session
+func (cs *ChatSession) SetAuthContext(authContext *SessionAuthContext) {
+	cs.AuthContext = authContext
+	cs.UpdateActivity()
+}
+
+// GetAuthContext returns the authentication context
+func (cs *ChatSession) GetAuthContext() *SessionAuthContext {
+	return cs.AuthContext
+}
+
+// IsAuthenticated checks if the session has valid authentication
+func (cs *ChatSession) IsAuthenticated() bool {
+	if cs.AuthContext == nil {
+		return false
+	}
+	
+	// Check if auth context is valid
+	if !cs.AuthContext.IsValid {
+		return false
+	}
+	
+	// Check if token is still valid
+	if time.Now().After(cs.AuthContext.TokenExpiresAt) {
+		cs.AuthContext.IsValid = false
+		return false
+	}
+	
+	return true
+}
+
+// UpdateAuthActivity updates the authentication last activity timestamp
+func (cs *ChatSession) UpdateAuthActivity() {
+	if cs.AuthContext != nil {
+		cs.AuthContext.LastActivity = time.Now()
+	}
+	cs.UpdateActivity()
+}
+
+// InvalidateAuth invalidates the authentication context
+func (cs *ChatSession) InvalidateAuth() {
+	if cs.AuthContext != nil {
+		cs.AuthContext.IsValid = false
+	}
+	cs.UpdateActivity()
+}
+
+// GetUserPermissions returns the user permissions for this session
+func (cs *ChatSession) GetUserPermissions() []string {
+	if cs.AuthContext == nil {
+		return []string{}
+	}
+	return cs.AuthContext.Permissions
+}
+
+// HasPermission checks if the session has a specific permission
+func (cs *ChatSession) HasPermission(permission string) bool {
+	if !cs.IsAuthenticated() {
+		return false
+	}
+	
+	for _, perm := range cs.AuthContext.Permissions {
+		if perm == permission {
+			return true
+		}
+	}
+	return false
+}
+
+// GetKubernetesContext returns the current Kubernetes context
+func (cs *ChatSession) GetKubernetesContext() string {
+	if cs.AuthContext != nil && cs.AuthContext.KubernetesContext != "" {
+		return cs.AuthContext.KubernetesContext
+	}
+	return cs.ClusterContext
+}
+
+// SetKubernetesContext updates the Kubernetes context for the session
+func (cs *ChatSession) SetKubernetesContext(context string) {
+	if cs.AuthContext != nil {
+		cs.AuthContext.KubernetesContext = context
+	}
+	cs.ClusterContext = context
+	cs.UpdateActivity()
+}
+
+// GetSessionLifetime returns the remaining session lifetime
+func (cs *ChatSession) GetSessionLifetime() time.Duration {
+	if cs.AuthContext != nil {
+		tokenLifetime := time.Until(cs.AuthContext.TokenExpiresAt)
+		sessionLifetime := time.Until(cs.ExpiresAt)
+		
+		// Return the shorter of the two
+		if tokenLifetime < sessionLifetime {
+			return tokenLifetime
+		}
+		return sessionLifetime
+	}
+	return time.Until(cs.ExpiresAt)
+}
+
+// RefreshAuthToken updates the authentication token information
+func (cs *ChatSession) RefreshAuthToken(newTokenExpiresAt time.Time, newRefreshTokenID string) {
+	if cs.AuthContext != nil {
+		cs.AuthContext.TokenExpiresAt = newTokenExpiresAt
+		cs.AuthContext.RefreshTokenID = newRefreshTokenID
+		cs.AuthContext.LastActivity = time.Now()
+	}
+	cs.UpdateActivity()
+}
+
+// CreateSessionWithAuth creates a new chat session with authentication context
+func NewChatSessionWithAuth(userID, clusterContext, namespace string, authContext *SessionAuthContext) *ChatSession {
+	session := NewChatSession(userID, clusterContext, namespace)
+	session.AuthContext = authContext
+	
+	// If auth context has shorter expiry, use that for session
+	if authContext != nil && authContext.TokenExpiresAt.Before(session.ExpiresAt) {
+		session.ExpiresAt = authContext.TokenExpiresAt
+	}
+	
+	return session
+}
+
+// ExtendedChatSessionManager includes authentication-aware session management
+type ExtendedChatSessionManager struct {
+	*ChatSessionManager
+}
+
+// NewExtendedChatSessionManager creates a new extended chat session manager
+func NewExtendedChatSessionManager() *ExtendedChatSessionManager {
+	return &ExtendedChatSessionManager{
+		ChatSessionManager: NewChatSessionManager(),
+	}
+}
+
+// CreateAuthenticatedSession creates a new chat session with authentication context
+func (ecsm *ExtendedChatSessionManager) CreateAuthenticatedSession(userID, clusterContext, namespace string, authContext *SessionAuthContext) *ChatSession {
+	session := NewChatSessionWithAuth(userID, clusterContext, namespace, authContext)
+	ecsm.sessions[session.ID] = session
+	return session
+}
+
+// GetAuthenticatedSession retrieves and validates an authenticated session
+func (ecsm *ExtendedChatSessionManager) GetAuthenticatedSession(sessionID string) (*ChatSession, error) {
+	session, err := ecsm.GetSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	
+	if !session.IsAuthenticated() {
+		return nil, fmt.Errorf("session %s is not authenticated or has expired authentication", sessionID)
+	}
+	
+	return session, nil
+}
+
+// GetUserAuthenticatedSessions returns all authenticated sessions for a user
+func (ecsm *ExtendedChatSessionManager) GetUserAuthenticatedSessions(userID string) []*ChatSession {
+	var authenticatedSessions []*ChatSession
+	
+	for _, session := range ecsm.sessions {
+		if session.UserID == userID && session.IsAuthenticated() {
+			authenticatedSessions = append(authenticatedSessions, session)
+		}
+	}
+	
+	return authenticatedSessions
+}
+
+// CleanupUnauthenticatedSessions removes sessions with invalid authentication
+func (ecsm *ExtendedChatSessionManager) CleanupUnauthenticatedSessions() int {
+	unauthenticatedCount := 0
+	var unauthenticatedSessions []string
+	
+	for sessionID, session := range ecsm.sessions {
+		if !session.IsAuthenticated() {
+			unauthenticatedSessions = append(unauthenticatedSessions, sessionID)
+			unauthenticatedCount++
+		}
+	}
+	
+	for _, sessionID := range unauthenticatedSessions {
+		delete(ecsm.sessions, sessionID)
+	}
+	
+	return unauthenticatedCount
 }

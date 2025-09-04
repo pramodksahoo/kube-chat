@@ -7,20 +7,25 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/pramodksahoo/kube-chat/pkg/models"
+	"github.com/pramodksahoo/kube-chat/pkg/middleware"
 )
 
 // TranslatorService defines the interface for natural language to kubectl translation
 type TranslatorService interface {
 	TranslateCommand(ctx context.Context, input string) (*models.KubernetesCommand, error)
 	TranslateCommandWithContext(ctx context.Context, input string, sessionContext *models.SessionContext) (*models.KubernetesCommand, error)
+	TranslateCommandWithRBAC(ctx context.Context, input string, sessionContext *models.SessionContext, jwtClaims *middleware.JWTClaims) (*models.KubernetesCommand, error)
+	SetRBACValidator(validator *middleware.RBACValidator)
 }
 
 // translatorService implements the TranslatorService interface for Story 1.1
 type translatorService struct {
 	patterns        []TranslationPattern
 	contextResolver *ContextResolver
+	rbacValidator   *middleware.RBACValidator
 }
 
 // TranslationPattern represents a pattern for translating natural language to kubectl commands
@@ -195,6 +200,290 @@ func (t *translatorService) TranslateCommandWithContext(ctx context.Context, inp
 	errorMsg += ". Supported commands include: show pods, create deployment, scale deployment, delete pod, describe the first pod, delete that service"
 	
 	return nil, fmt.Errorf("%s", errorMsg)
+}
+
+// TranslateCommandWithRBAC translates natural language input with RBAC permission validation
+func (t *translatorService) TranslateCommandWithRBAC(ctx context.Context, input string, sessionContext *models.SessionContext, jwtClaims *middleware.JWTClaims) (*models.KubernetesCommand, error) {
+	if jwtClaims == nil {
+		return nil, fmt.Errorf("JWT claims required for RBAC validation")
+	}
+
+	if t.rbacValidator == nil {
+		return nil, fmt.Errorf("RBAC validator not configured")
+	}
+
+	// First, translate the command using existing logic
+	kubeCommand, err := t.TranslateCommandWithContext(ctx, input, sessionContext)
+	if err != nil {
+		return nil, fmt.Errorf("command translation failed: %w", err)
+	}
+
+	// Extract resource details from the generated kubectl command for RBAC validation
+	resourceDetails, err := t.extractResourceDetails(kubeCommand.GeneratedCommand, sessionContext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract resource details for RBAC validation: %w", err)
+	}
+
+	// Perform RBAC validation before allowing command execution
+	for _, resource := range resourceDetails {
+		permissionRequest := middleware.PermissionRequest{
+			KubernetesUser:   jwtClaims.KubernetesUser,
+			KubernetesGroups: jwtClaims.KubernetesGroups,
+			SessionID:        jwtClaims.SessionID,
+			Namespace:        resource.Namespace,
+			Verb:             resource.Verb,
+			Resource:         resource.Resource,
+			ResourceName:     resource.ResourceName,
+			APIGroup:         resource.APIGroup,
+			CommandContext:   input,
+			AllowedActions:   extractAllowedActions(kubeCommand),
+		}
+
+		// Validate permission
+		response, err := t.rbacValidator.ValidatePermission(ctx, permissionRequest)
+		if err != nil {
+			return nil, fmt.Errorf("RBAC validation error: %w", err)
+		}
+
+		// If permission is denied, create and return an RBAC error
+		if !response.Allowed {
+			rbacError := &models.RBACPermissionError{
+				User:          jwtClaims.KubernetesUser,
+				Groups:        jwtClaims.KubernetesGroups,
+				Resource:      resource.Resource,
+				Verb:          resource.Verb,
+				Namespace:     resource.Namespace,
+				Reason:        response.Reason,
+				Suggestions:   response.Suggestions,
+				ValidationID:  response.ValidationID,
+				Command:       kubeCommand.GeneratedCommand,
+				OriginalInput: input,
+			}
+			return nil, rbacError
+		}
+
+		// Add RBAC validation metadata to the command
+		kubeCommand.RBACValidated = true
+		kubeCommand.ValidationID = response.ValidationID
+		kubeCommand.ValidatedAt = response.EvaluatedAt
+	}
+
+	// Create secure audit trail for successful RBAC validation
+	t.recordSuccessfulRBACValidation(ctx, kubeCommand, jwtClaims, resourceDetails)
+
+	return kubeCommand, nil
+}
+
+// SetRBACValidator sets the RBAC validator for permission checking
+func (t *translatorService) SetRBACValidator(validator *middleware.RBACValidator) {
+	t.rbacValidator = validator
+}
+
+// extractResourceDetails extracts resource details from kubectl command for RBAC validation
+func (t *translatorService) extractResourceDetails(kubectlCommand string, sessionContext *models.SessionContext) ([]ResourceDetails, error) {
+	var resources []ResourceDetails
+
+	// Parse kubectl command to extract verb, resource type, namespace, etc.
+	parts := strings.Fields(kubectlCommand)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid kubectl command format")
+	}
+
+	if parts[0] != "kubectl" {
+		return nil, fmt.Errorf("command must start with 'kubectl'")
+	}
+
+	verb := parts[1]
+	
+	// Map kubectl verbs to Kubernetes RBAC verbs
+	rbacVerb := mapKubectlVerbToRBAC(verb)
+	if rbacVerb == "" {
+		return nil, fmt.Errorf("unsupported kubectl verb: %s", verb)
+	}
+
+	// Extract resource type
+	var resourceType, namespace, resourceName, apiGroup string
+	
+	// Look for resource type (pods, deployments, services, etc.)
+	if len(parts) >= 3 {
+		resourceType = parts[2]
+		
+		// Handle resource type with API group (e.g., apps/v1/deployments)
+		if strings.Contains(resourceType, "/") {
+			apiParts := strings.Split(resourceType, "/")
+			if len(apiParts) >= 2 {
+				apiGroup = apiParts[0]
+				resourceType = apiParts[len(apiParts)-1]
+			}
+		}
+	}
+
+	// Extract namespace from -n or --namespace flags
+	for i, part := range parts {
+		if (part == "-n" || part == "--namespace") && i+1 < len(parts) {
+			namespace = parts[i+1]
+			break
+		}
+		if strings.HasPrefix(part, "--namespace=") {
+			namespace = strings.TrimPrefix(part, "--namespace=")
+			break
+		}
+	}
+
+	// Extract resource name if specified
+	if len(parts) >= 4 && !strings.HasPrefix(parts[3], "-") {
+		resourceName = parts[3]
+	}
+
+	// Use default namespace from session context if not specified
+	if namespace == "" && sessionContext != nil && sessionContext.Namespace != "" {
+		namespace = sessionContext.Namespace
+	}
+
+	// Default to "default" namespace if still not specified
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	// Normalize resource type to singular form for RBAC
+	resourceType = normalizeResourceType(resourceType)
+
+	resource := ResourceDetails{
+		Namespace:    namespace,
+		Verb:         rbacVerb,
+		Resource:     resourceType,
+		ResourceName: resourceName,
+		APIGroup:     apiGroup,
+	}
+
+	resources = append(resources, resource)
+	return resources, nil
+}
+
+// ResourceDetails represents the details needed for RBAC validation
+type ResourceDetails struct {
+	Namespace    string
+	Verb         string
+	Resource     string
+	ResourceName string
+	APIGroup     string
+}
+
+// mapKubectlVerbToRBAC maps kubectl verbs to Kubernetes RBAC verbs
+func mapKubectlVerbToRBAC(kubectlVerb string) string {
+	verbMap := map[string]string{
+		"get":         "get",
+		"list":        "list",
+		"describe":    "get",
+		"create":      "create",
+		"apply":       "create", // Also requires update for existing resources
+		"replace":     "update",
+		"patch":       "patch",
+		"edit":        "update",
+		"delete":      "delete",
+		"scale":       "update", // Scaling requires update permission
+		"rollout":     "update", // Rollout operations require update
+		"expose":      "create", // Expose creates a service
+		"port-forward": "get",   // Port-forward requires get permission on pods
+		"logs":        "get",    // Logs require get permission
+		"exec":        "get",    // Exec requires get permission (and create for pods/exec)
+		"attach":      "get",    // Attach requires get permission
+		"cp":          "get",    // Copy requires get permission
+	}
+
+	return verbMap[kubectlVerb]
+}
+
+// normalizeResourceType normalizes resource types to their singular RBAC form
+func normalizeResourceType(resourceType string) string {
+	// Map plural forms to singular forms for RBAC
+	typeMap := map[string]string{
+		"pods":                   "pods",
+		"pod":                    "pods",
+		"services":               "services",
+		"service":                "services",
+		"svc":                    "services",
+		"deployments":            "deployments",
+		"deployment":             "deployments",
+		"deploy":                 "deployments",
+		"configmaps":             "configmaps",
+		"configmap":              "configmaps",
+		"cm":                     "configmaps",
+		"secrets":                "secrets",
+		"secret":                 "secrets",
+		"nodes":                  "nodes",
+		"node":                   "nodes",
+		"namespaces":             "namespaces",
+		"namespace":              "namespaces",
+		"ns":                     "namespaces",
+		"replicasets":            "replicasets",
+		"replicaset":             "replicasets",
+		"rs":                     "replicasets",
+		"daemonsets":             "daemonsets",
+		"daemonset":              "daemonsets",
+		"ds":                     "daemonsets",
+		"statefulsets":           "statefulsets",
+		"statefulset":            "statefulsets",
+		"sts":                    "statefulsets",
+		"jobs":                   "jobs",
+		"job":                    "jobs",
+		"cronjobs":               "cronjobs",
+		"cronjob":                "cronjobs",
+		"cj":                     "cronjobs",
+		"persistentvolumes":      "persistentvolumes",
+		"persistentvolume":       "persistentvolumes",
+		"pv":                     "persistentvolumes",
+		"persistentvolumeclaims": "persistentvolumeclaims",
+		"persistentvolumeclaim":  "persistentvolumeclaims",
+		"pvc":                    "persistentvolumeclaims",
+		"ingresses":              "ingresses",
+		"ingress":                "ingresses",
+		"ing":                    "ingresses",
+	}
+
+	if normalized, exists := typeMap[strings.ToLower(resourceType)]; exists {
+		return normalized
+	}
+
+	// Return as-is if not found in map
+	return strings.ToLower(resourceType)
+}
+
+// extractAllowedActions extracts allowed actions from the kubernetes command
+func extractAllowedActions(kubeCommand *models.KubernetesCommand) []string {
+	actions := []string{}
+	
+	// Extract actions based on risk level and command type
+	switch kubeCommand.RiskLevel {
+	case models.RiskLevelSafe:
+		actions = append(actions, "read", "list", "describe")
+	case models.RiskLevelCaution:
+		actions = append(actions, "read", "list", "describe", "create", "update")
+	case models.RiskLevelDestructive:
+		actions = append(actions, "read", "list", "describe", "create", "update", "delete")
+	}
+
+	return actions
+}
+
+// recordSuccessfulRBACValidation records successful RBAC validation for audit trail
+func (t *translatorService) recordSuccessfulRBACValidation(ctx context.Context, kubeCommand *models.KubernetesCommand, jwtClaims *middleware.JWTClaims, resources []ResourceDetails) {
+	// Create audit entry for successful validation
+	auditEntry := map[string]interface{}{
+		"timestamp":      time.Now(),
+		"user":           jwtClaims.KubernetesUser,
+		"session_id":     jwtClaims.SessionID,
+		"validation_id":  kubeCommand.ValidationID,
+		"command":        kubeCommand.GeneratedCommand,
+		"original_input": kubeCommand.NaturalLanguageInput,
+		"resources":      resources,
+		"risk_level":     kubeCommand.RiskLevel,
+		"status":         "rbac_validated",
+	}
+
+	// TODO: Integrate with proper audit logging service
+	// For now, this creates a structured audit record
+	_ = auditEntry
 }
 
 // getStory11TranslationPatterns returns the predefined translation patterns for Story 1.1 (read operations)
