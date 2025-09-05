@@ -61,6 +61,13 @@ type KubernetesCommand struct {
 	RollbackCommand      *string                 `json:"rollbackCommand,omitempty"`
 	ApprovalToken        *string                 `json:"approvalToken,omitempty"`     // NEW: Required for confirmation
 	ApprovalExpiresAt    *time.Time              `json:"approvalExpiresAt,omitempty"` // NEW: Auto-cancel timeout
+	
+	// RBAC Validation fields (Story 2.2)
+	RBACValidated        bool      `json:"rbacValidated,omitempty"`      // Whether RBAC validation was performed
+	ValidationID         string    `json:"validationId,omitempty"`       // RBAC validation ID for audit trail
+	ValidatedAt          time.Time `json:"validatedAt,omitempty"`        // When RBAC validation was performed
+	ValidatedBy          string    `json:"validatedBy,omitempty"`        // User who performed the validation
+	
 	CreatedAt            time.Time               `json:"createdAt"`
 	UpdatedAt            time.Time               `json:"updatedAt"`
 }

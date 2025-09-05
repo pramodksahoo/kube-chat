@@ -132,6 +132,41 @@ kubectl apply -f config/
 
 For comprehensive usage instructions, see the [NLP User Guide](docs/user-guides/nlp-usage.md).
 
+## Production Deployment
+
+KubeChat supports enterprise-grade deployment with OIDC/SAML authentication, Redis clustering, and comprehensive security features.
+
+### Quick Production Setup
+
+1. **Configure Redis and Authentication**:
+```bash
+# Set required environment variables
+export KUBECHAT_PUBLIC_URL=https://kubechat.yourdomain.com
+export KUBECHAT_SESSION_SECRET=your-secure-32-character-key
+export KUBECHAT_REDIS_ADDR=redis.prod.svc.cluster.local:6379
+export KUBECHAT_OIDC_ISSUER_URL=https://auth.company.com
+export KUBECHAT_OIDC_CLIENT_ID=kubechat-production
+export KUBECHAT_OIDC_CLIENT_SECRET=your-oidc-secret
+```
+
+2. **Deploy to Kubernetes**:
+```bash
+# Apply production configuration
+kubectl apply -f config/production/
+```
+
+### Authentication Providers Supported
+
+- **OIDC Providers**: Azure AD, Google Workspace, Okta, Auth0, generic OIDC
+- **SAML Providers**: ADFS, Okta SAML, Shibboleth, generic SAML 2.0
+- **Security Features**: JWT token rotation, rate limiting, brute force protection, circuit breakers
+
+### Documentation
+
+- **[Production Deployment Guide](docs/deployment/production-deployment.md)** - Complete production setup
+- **[Configuration Reference](docs/deployment/configuration-reference.md)** - All environment variables and settings
+- **[Security Guide](docs/architecture/security.md)** - Security best practices and configuration
+
 ## Development
 
 ### Project Structure
