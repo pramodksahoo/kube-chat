@@ -4,7 +4,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import CommandHistory from '../CommandHistory';
 import type { HistoryEntry } from '../CommandHistory';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations } as any);
 
 const mockEntries: HistoryEntry[] = [
   {

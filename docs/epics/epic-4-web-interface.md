@@ -108,9 +108,9 @@ This epic delivers the primary user interface for KubeChat, implementing the con
 4. System SHALL visualize resource relationships and dependencies when relevant
 5. System SHALL update resource information automatically when cluster state changes
 
-**Story Priority:** P1 (High)
-**Story Points:** 10
-**Dependencies:** Story 4.1, 4.3, Epic 1 (Kubernetes integration)
+**Story Priority:** P0 (Critical) - Enterprise integration essential
+**Story Points:** 18 (+8 for RBAC, Audit, Command History integrations)
+**Dependencies:** Story 4.1, 4.3, Epic 1 (Kubernetes integration), Epic 2 (RBAC), Epic 3 (Audit logging)
 
 ### Story 4.5: Authentication and Session Management UI
 **As a** enterprise user  

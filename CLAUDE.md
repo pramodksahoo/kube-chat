@@ -17,8 +17,9 @@ KubeChat is a Kubernetes operator that enables natural language management of Ku
 1. Read `.bmad/stories/current-story.md` for current task
 2. Check `.bmad/planning/current-epic.md` for broader context
 3. Reference `docs/architecture.md` for technical decisions
-4. Follow `docs/development/coding-standards.md` for implementation
-5. Update story progress after each completed task
+4. Reference `docs/architecture/` for technical decisions
+5. Follow `docs/architecture/coding-standards.md` for implementation
+6. Update story progress after each completed task
 
 ### Code Implementation Rules:
 - **Never skip error handling** - Every function must handle errors appropriately
@@ -44,7 +45,7 @@ KubeChat is a Kubernetes operator that enables natural language management of Ku
 6. Move to next story when current is 100% done
 
 ### File Structure Priority for Context:
-1. `.bmad/stories/current-story.md` (highest priority)
+1. `docs/stories/current-story.md` (highest priority)
 2. `docs/architecture.md`
 3. `docs/development/coding-standards.md`
 4. `api/v1/` (CRD definitions)

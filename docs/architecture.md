@@ -21,25 +21,27 @@ Based on the PRD and UI/UX specifications, KubeChat is a greenfield project requ
 
 ### Technical Summary
 
-KubeChat employs a fully Kubernetes-native architecture deployed via Helm charts directly into customer clusters. The system combines a custom Kubernetes operator with cloud-native microservices, all running within the customer's infrastructure without external dependencies. The React frontend communicates via WebSocket with a Go-based API gateway that orchestrates between the Kubernetes operator, natural language processing service, and compliance audit system. The architecture prioritizes zero vendor lock-in, enterprise security with RBAC integration, and horizontal scalability supporting 100+ concurrent users through cloud-agnostic technologies.
+KubeChat employs a **Phase 1 Model 1 (On-Premises FREE Platform)** architecture deployed via Helm charts directly into customer-controlled Kubernetes clusters. The system combines Go-based microservices (api-gateway, nlp-service, audit-service) with a React frontend, all running within the customer's infrastructure with **complete data sovereignty and air-gap capability**. The React frontend communicates via WebSocket with the Go-based API gateway. The architecture prioritizes **zero vendor lock-in**, **enterprise security with OIDC/SAML integration**, **comprehensive audit trails**, and scalability supporting **1000+ concurrent users** as specified in PRD performance requirements.
 
 ### Platform and Infrastructure Choice
 
-**Platform:** Kubernetes-Native (Cloud Agnostic)
-**Key Services:** PostgreSQL Operator, Redis Operator, Cert-Manager, Ingress Controllers, Prometheus Stack, OpenTelemetry
-**Deployment Model:** Helm chart installation in customer's Kubernetes clusters (any cloud or on-premises)
-**Infrastructure:** Customer-controlled Kubernetes clusters (EKS, GKE, AKS, OpenShift, Rancher, or vanilla Kubernetes)
+**Platform:** **On-Premises Kubernetes (Phase 1 Model 1 PRIMARY Focus)**
+**Key Services:** PostgreSQL, Redis, External Secrets Operator, cert-manager (all customer-controlled)
+**Deployment Model:** **Air-gap capable Helm chart installation** in customer's infrastructure
+**Infrastructure:** Customer-controlled Kubernetes clusters (any cloud or on-premises, air-gap compatible)
+**Data Sovereignty:** 100% customer-controlled with **zero vendor access** to customer data
 
 ### Repository Structure
 
-**Structure:** Monorepo with clear separation of concerns between operator, services, and web application
+**Structure:** Monorepo aligned with **BMAD methodology** and current project structure
 **Monorepo Tool:** Turborepo for optimized build caching and dependency management
 **Package Organization:** 
-- `/operator` - Go-based Kubernetes operator
-- `/services` - Node.js microservices (API gateway, NLP service, audit service)  
-- `/web` - React frontend application
-- `/shared` - Common types, utilities, and configuration
-- `/infrastructure` - Terraform IaC definitions
+- `/cmd` - Go application entry points (api-gateway, nlp-service, audit-service)
+- `/pkg` - Shared Go packages (models, clients, middleware, audit)
+- `/web` - React frontend application (Epic 4 - Web Interface)
+- `/config` - Kubernetes CRDs and RBAC definitions
+- `/deploy` - Helm charts for customer deployment
+- `/.bmad` - BMAD framework for story-driven development
 
 ### High Level Architecture Diagram
 
@@ -116,17 +118,17 @@ graph TB
 | Frontend Framework | React | 18.2+ | Interactive chat interface | Mature ecosystem, excellent performance, extensive enterprise adoption |
 | UI Component Library | Tailwind CSS + Radix UI | 3.4+ / 1.0+ | Modern design system | Latest utility-first styling with headless components, better accessibility |
 | State Management | Zustand | 4.5+ | Client-side state management | Lightweight, TypeScript-first, excellent for real-time applications |
-| Backend Language | Go | 1.22+ | All backend services | Unified language, excellent Kubernetes integration, superior performance |
-| Backend Framework | Fiber v3 | 3.0+ | High-performance web framework | Latest Go framework, faster than Gin, excellent WebSocket support |
+| Backend Language | Go | 1.22+ | All backend services | **Phase 1 Model 1 primary language**, excellent Kubernetes integration, enterprise performance |
+| Backend Framework | Native Go HTTP + Gorilla WebSocket | 1.22+ stdlib + v1.5+ | Web services and WebSocket | **Phase 1 Model 1 focus**, proven enterprise patterns, minimal dependencies for air-gap deployment |
 | API Style | REST + WebSocket | - | Real-time chat + standard APIs | REST for CRUD operations, WebSocket for real-time chat messaging |
 | Database | PostgreSQL | 16+ | Audit data and user management | Latest version with improved performance, ACID compliance for audit trails |
-| Database Operator | CloudNativePG | 1.21+ | Kubernetes-native PostgreSQL | Production-ready PostgreSQL operator, backup, monitoring, high availability |
+| Database Deployment | PostgreSQL Helm Chart | 16+ | Customer-managed PostgreSQL | **Phase 1 Model 1**: Customer-controlled database with backup integration |
 | Cache | Redis | 7.2+ | Session storage and API caching | High performance, WebSocket session management, NLP response caching |
-| Cache Operator | Redis Operator | 1.4+ | Kubernetes-native Redis | Production-ready Redis operator with clustering and persistence |
-| Container Registry | Harbor | 2.10+ | Private container images | Self-hosted, vulnerability scanning, RBAC, policy management |
-| Authentication | OIDC + Dex | - | Enterprise identity integration | Cloud-native OIDC provider, SAML/LDAP/AD integration, no vendor lock-in |
-| Secret Management | External Secrets Operator | 0.9+ | Kubernetes-native secrets | Integrates with HashiCorp Vault, AWS/Azure/GCP secret managers |
-| Service Mesh | Istio | 1.20+ | Advanced networking and security | mTLS, traffic management, observability, zero-trust networking |
+| Cache Deployment | Redis Helm Chart | 7.2+ | Customer-managed Redis | **Phase 1 Model 1**: Customer-controlled Redis with persistence and clustering |
+| Container Registry | Customer Registry | Any | Private container images | **Phase 1 Model 1**: Customer-controlled registry (Harbor, Docker Registry, or cloud registry) |
+| Authentication | OIDC/SAML Integration | - | Enterprise identity integration | **Phase 1 Model 1**: Direct integration with customer identity providers (AD, Okta, Auth0) |
+| Secret Management | Kubernetes Secrets + Optional ESO | 0.9+ | Customer-controlled secrets | **Phase 1 Model 1**: Native K8s secrets, optional integration with customer Vault/secret managers |
+| Service Mesh | Optional Istio Integration | 1.20+ | Customer service mesh | **Phase 1 Model 1**: Optional integration with customer's existing service mesh |
 | Frontend Testing | Vitest + Testing Library | 1.6+ / 14+ | Modern testing framework | Faster than Jest, better TypeScript support, Vite integration |
 | Backend Testing | Testify | 1.9+ | Go testing framework | Industry standard Go testing, excellent async testing support |
 | E2E Testing | Playwright | 1.42+ | End-to-end user workflows | Latest version, excellent Kubernetes testing, handles WebSocket connections |
@@ -143,7 +145,7 @@ graph TB
 | Load Balancing | Kubernetes Services | - | Native load balancing | Built-in load balancing with Service mesh integration |
 | Storage | Longhorn | 1.6+ | Kubernetes-native storage | Cloud-agnostic persistent storage, backup, disaster recovery |
 | Backup | Velero | 1.13+ | Kubernetes backup solution | Cluster backup, disaster recovery, cloud-agnostic storage |
-| AI/ML Runtime | Ollama | 0.1.26+ | Local LLM inference | Privacy-first AI, no external dependencies, supports multiple models |
+| AI/ML Runtime | Local LLM + Optional OpenAI | Various | Natural language processing | **Phase 1 Model 1**: Air-gap compatible local models, optional OpenAI API integration |
 | WebAssembly Runtime | Wasmtime (Optional) | 17+ | Secure plugin system | Future-ready extension system, secure sandboxing |
 
 ## Data Models
@@ -516,6 +518,190 @@ paths:
         200:
           description: Export generated successfully
 
+  /resources:
+    get:
+      summary: List cluster Kubernetes resources
+      tags: [Resources]
+      parameters:
+        - name: namespace
+          in: query
+          schema:
+            type: string
+          description: Filter resources by namespace
+        - name: kind
+          in: query
+          schema:
+            type: string
+          description: Filter resources by Kubernetes kind
+        - name: labelSelector
+          in: query
+          schema:
+            type: string
+          description: Filter resources by label selector
+      responses:
+        200:
+          description: Resources retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResourceStatus'
+
+  /resources/{kind}/{name}:
+    get:
+      summary: Get specific Kubernetes resource details
+      tags: [Resources]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Kubernetes resource kind (e.g., pod, deployment, service)
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Resource name
+        - name: namespace
+          in: query
+          schema:
+            type: string
+          description: Resource namespace (required for namespaced resources)
+      responses:
+        200:
+          description: Resource details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceStatus'
+        404:
+          description: Resource not found
+
+  /resources/{kind}/{name}/describe:
+    get:
+      summary: Get detailed resource description (kubectl describe equivalent)
+      tags: [Resources]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Resource description retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  yaml:
+                    type: string
+                    description: YAML representation of the resource
+                  description:
+                    type: string
+                    description: Human-readable resource description
+
+  /resources/{kind}/{name}/logs:
+    get:
+      summary: Stream resource logs (for pods and containers)
+      tags: [Resources]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: container
+          in: query
+          schema:
+            type: string
+          description: Specific container name for multi-container pods
+        - name: follow
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Follow log output (stream)
+        - name: tailLines
+          in: query
+          schema:
+            type: integer
+            default: 100
+          description: Number of lines to tail
+      responses:
+        200:
+          description: Resource logs retrieved successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Log content
+        404:
+          description: Resource not found or logs not available
+
+  /resources/{kind}/{name}/events:
+    get:
+      summary: Get resource-related Kubernetes events
+      tags: [Resources]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of events to return
+      responses:
+        200:
+          description: Resource events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KubernetesEvent'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -547,15 +733,111 @@ components:
     AuditEventType:
       type: string
       enum: [authentication, command_generation, command_execution, permission_check, data_access, configuration_change]
+
+    ResourceStatus:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: Kubernetes resource kind (e.g., Pod, Deployment, Service)
+        name:
+          type: string
+          description: Resource name
+        namespace:
+          type: string
+          description: Resource namespace (if namespaced)
+        status:
+          type: string
+          enum: [Ready, Warning, Error, Unknown]
+          description: Resource health status
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp of last resource update
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional resource metadata and annotations
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceReference'
+          description: Related Kubernetes resources
+
+    ResourceReference:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: Referenced resource kind
+        name:
+          type: string
+          description: Referenced resource name
+        namespace:
+          type: string
+          description: Referenced resource namespace (if applicable)
+        relationship:
+          type: string
+          enum: [owns, references, depends-on]
+          description: Type of relationship to this resource
+
+    KubernetesEvent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Event name
+        namespace:
+          type: string
+          description: Event namespace
+        reason:
+          type: string
+          description: Event reason
+        message:
+          type: string
+          description: Human-readable event message
+        type:
+          type: string
+          enum: [Normal, Warning]
+          description: Event type
+        count:
+          type: integer
+          description: Number of times this event occurred
+        firstTimestamp:
+          type: string
+          format: date-time
+          description: First occurrence timestamp
+        lastTimestamp:
+          type: string
+          format: date-time
+          description: Last occurrence timestamp
+        source:
+          type: object
+          properties:
+            component:
+              type: string
+            host:
+              type: string
+          description: Event source information
 ```
 
 **WebSocket Events:**
 
-The real-time chat functionality uses WebSocket connections with the following event structure:
+The real-time functionality uses WebSocket connections for both chat and resource monitoring:
 
+**Chat WebSocket Events:**
 - **Connection**: `wss://api.kubechat.io/chat/{sessionId}?token={jwt}`
 - **Message Format**: JSON with `type` and `payload` properties
 - **Events**: `message_sent`, `command_generated`, `command_executed`, `session_updated`, `error`
+
+**Resource Monitoring WebSocket Events:**
+- **Connection**: `wss://api.kubechat.io/resources/{sessionId}?token={jwt}`
+- **Message Format**: JSON with `type` and `payload` properties
+- **Events**: 
+  - `resource_updated`: Kubernetes resource status changed
+  - `resource_created`: New resource created in monitored namespace
+  - `resource_deleted`: Resource removed from cluster
+  - `cluster_state_changed`: Overall cluster state update notification
 
 ## Components
 
@@ -632,6 +914,403 @@ The real-time chat functionality uses WebSocket connections with the following e
 **Dependencies:** API Gateway for backend communication, Ingress Controller for routing, Zustand for client-side state management, service worker for PWA features
 
 **Technology Stack:** React 18 + TypeScript + Vite, Tailwind CSS + Radix UI, deployed as Kubernetes Deployment with nginx, static file serving optimized for performance, real-time updates via WebSocket
+
+#### Frontend Routing Architecture
+
+**Routing Library:** React Router v6.8+ for client-side navigation with TypeScript support
+
+**Route Structure and Protection:**
+```typescript
+// web/src/router/AppRouter.tsx
+import { createBrowserRouter, Navigate, RouteObject } from 'react-router-dom';
+import { ProtectedRoute } from './ProtectedRoute';
+import { RoleGuard } from './RoleGuard';
+
+const routes: RouteObject[] = [
+  {
+    path: '/',
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/chat" replace />,
+      },
+      {
+        path: 'login',
+        element: <LoginPage />,
+        loader: redirectIfAuthenticated,
+      },
+      {
+        path: 'chat',
+        element: (
+          <ProtectedRoute>
+            <ChatInterface />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: ':sessionId',
+            element: <ChatSession />,
+            loader: loadChatSession,
+          },
+        ],
+      },
+      {
+        path: 'audit',
+        element: (
+          <ProtectedRoute>
+            <RoleGuard requiredRole="admin">
+              <AuditDashboard />
+            </RoleGuard>
+          </ProtectedRoute>
+        ),
+        lazy: () => import('../pages/AuditDashboard'),
+      },
+      {
+        path: 'settings',
+        element: (
+          <ProtectedRoute>
+            <UserSettings />
+          </ProtectedRoute>
+        ),
+        lazy: () => import('../pages/UserSettings'),
+      },
+      {
+        path: 'admin',
+        element: (
+          <ProtectedRoute>
+            <RoleGuard requiredRole="admin">
+              <AdminPanel />
+            </RoleGuard>
+          </ProtectedRoute>
+        ),
+        lazy: () => import('../pages/AdminPanel'),
+        children: [
+          {
+            path: 'users',
+            element: <UserManagement />,
+          },
+          {
+            path: 'policies',
+            element: <PolicyConfiguration />,
+          },
+          {
+            path: 'system',
+            element: <SystemHealth />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
+];
+
+export const router = createBrowserRouter(routes);
+```
+
+**Route Protection Implementation:**
+```typescript
+// web/src/router/ProtectedRoute.tsx
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+        <span className="sr-only">Authenticating user...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <Navigate 
+        to="/login" 
+        state={{ from: location.pathname }} 
+        replace 
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+```
+
+**Role-Based Access Control:**
+```typescript
+// web/src/router/RoleGuard.tsx
+interface RoleGuardProps {
+  children: React.ReactNode;
+  requiredRole: 'viewer' | 'operator' | 'admin';
+  fallback?: React.ReactNode;
+}
+
+export function RoleGuard({ 
+  children, 
+  requiredRole, 
+  fallback = <UnauthorizedPage /> 
+}: RoleGuardProps) {
+  const { user } = useAuth();
+
+  const hasRequiredRole = useMemo(() => {
+    if (!user) return false;
+    
+    const roleHierarchy = {
+      viewer: 1,
+      operator: 2,
+      admin: 3,
+    };
+    
+    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+  }, [user, requiredRole]);
+
+  if (!hasRequiredRole) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+}
+```
+
+**State-Driven Navigation:**
+```typescript
+// web/src/hooks/useAppNavigation.ts
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useChatStore } from '../stores/chatStore';
+
+export function useAppNavigation() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentSessionId } = useChatStore();
+
+  const navigateToChat = useCallback((sessionId?: string) => {
+    const path = sessionId ? `/chat/${sessionId}` : '/chat';
+    navigate(path);
+  }, [navigate]);
+
+  const navigateToAudit = useCallback((filters?: AuditFilters) => {
+    const searchParams = new URLSearchParams();
+    if (filters?.startDate) {
+      searchParams.set('start', filters.startDate.toISOString());
+    }
+    if (filters?.endDate) {
+      searchParams.set('end', filters.endDate.toISOString());
+    }
+    if (filters?.userId) {
+      searchParams.set('user', filters.userId);
+    }
+    
+    const path = `/audit${searchParams.toString() ? `?${searchParams}` : ''}`;
+    navigate(path);
+  }, [navigate]);
+
+  const restoreSessionFromUrl = useCallback(() => {
+    const sessionId = location.pathname.match(/\/chat\/(.+)/)?.[1];
+    if (sessionId && sessionId !== currentSessionId) {
+      // Restore session state from URL parameter
+      return sessionId;
+    }
+    return null;
+  }, [location.pathname, currentSessionId]);
+
+  return {
+    navigateToChat,
+    navigateToAudit,
+    restoreSessionFromUrl,
+    currentPath: location.pathname,
+  };
+}
+```
+
+**Lazy Loading and Code Splitting:**
+```typescript
+// web/src/router/LazyRoutes.tsx
+import { lazy, Suspense } from 'react';
+import { LoadingFallback } from '../components/ui/LoadingFallback';
+
+// Lazy loaded components with loading fallbacks
+const AuditDashboard = lazy(() => 
+  import('../pages/AuditDashboard').then(module => ({ 
+    default: module.AuditDashboard 
+  }))
+);
+
+const UserSettings = lazy(() => 
+  import('../pages/UserSettings').then(module => ({ 
+    default: module.UserSettings 
+  }))
+);
+
+const AdminPanel = lazy(() => 
+  import('../pages/AdminPanel').then(module => ({ 
+    default: module.AdminPanel 
+  }))
+);
+
+// Wrapper component with consistent loading UI
+export function LazyRoute({ 
+  component: Component, 
+  ...props 
+}: { component: React.ComponentType<any> }) {
+  return (
+    <Suspense fallback={<LoadingFallback message="Loading page..." />}>
+      <Component {...props} />
+    </Suspense>
+  );
+}
+```
+
+**URL State Synchronization:**
+```typescript
+// web/src/hooks/useUrlState.ts
+import { useSearchParams } from 'react-router-dom';
+import { useMemo, useCallback } from 'react';
+
+export function useUrlState<T>(
+  key: string,
+  defaultValue: T,
+  serializer?: {
+    serialize: (value: T) => string;
+    deserialize: (value: string) => T;
+  }
+) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const value = useMemo(() => {
+    const urlValue = searchParams.get(key);
+    if (!urlValue) return defaultValue;
+    
+    try {
+      return serializer 
+        ? serializer.deserialize(urlValue)
+        : JSON.parse(urlValue);
+    } catch {
+      return defaultValue;
+    }
+  }, [searchParams, key, defaultValue, serializer]);
+
+  const setValue = useCallback((newValue: T) => {
+    const serializedValue = serializer
+      ? serializer.serialize(newValue)
+      : JSON.stringify(newValue);
+      
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue === defaultValue) {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, serializedValue);
+      }
+      return newParams;
+    });
+  }, [setSearchParams, key, defaultValue, serializer]);
+
+  return [value, setValue] as const;
+}
+
+// Usage example for audit filters
+export function useAuditFilters() {
+  return useUrlState('filters', { 
+    startDate: null, 
+    endDate: null, 
+    eventType: null 
+  }, {
+    serialize: (filters) => btoa(JSON.stringify(filters)),
+    deserialize: (encoded) => JSON.parse(atob(encoded)),
+  });
+}
+```
+
+**Navigation Menu Integration:**
+```typescript
+// web/src/components/navigation/NavigationMenu.tsx
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+
+export function NavigationMenu() {
+  const { user } = useAuth();
+
+  const navigationItems = [
+    {
+      to: '/chat',
+      label: 'Chat',
+      icon: <ChatIcon />,
+      requiredRole: 'viewer' as const,
+    },
+    {
+      to: '/audit',
+      label: 'Audit Logs',
+      icon: <AuditIcon />,
+      requiredRole: 'operator' as const,
+    },
+    {
+      to: '/settings',
+      label: 'Settings',
+      icon: <SettingsIcon />,
+      requiredRole: 'viewer' as const,
+    },
+    {
+      to: '/admin',
+      label: 'Administration',
+      icon: <AdminIcon />,
+      requiredRole: 'admin' as const,
+    },
+  ];
+
+  const hasRole = (requiredRole: string) => {
+    const roleHierarchy = { viewer: 1, operator: 2, admin: 3 };
+    return roleHierarchy[user?.role] >= roleHierarchy[requiredRole];
+  };
+
+  return (
+    <nav role="navigation" aria-label="Main navigation">
+      <ul className="navigation-menu">
+        {navigationItems
+          .filter(item => hasRole(item.requiredRole))
+          .map(item => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                className={({ isActive }) => 
+                  `nav-link ${isActive ? 'nav-link--active' : ''}`
+                }
+                aria-current={({ isActive }) => isActive ? 'page' : undefined}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </NavLink>
+            </li>
+          ))}
+      </ul>
+    </nav>
+  );
+}
+```
+
+**Route Definition Summary:**
+| Route | Component | Protection | Lazy Loaded | Purpose |
+|-------|-----------|------------|-------------|---------|
+| `/` | Navigate to `/chat` | None | No | Root redirect |
+| `/login` | LoginPage | Redirect if authenticated | No | User authentication |
+| `/chat` | ChatInterface | Authentication required | No | Primary chat interface |
+| `/chat/:sessionId` | ChatSession | Authentication required | No | Specific chat session |
+| `/audit` | AuditDashboard | Admin/Operator role | Yes | Audit log management |
+| `/settings` | UserSettings | Authentication required | Yes | User preferences |
+| `/admin/*` | AdminPanel | Admin role only | Yes | Administrative functions |
+| `*` | NotFoundPage | None | No | 404 error handling |
 
 ### Redis Cache Layer
 
@@ -800,115 +1479,450 @@ monitoring:
 - Session Management: Redis-based session store with automatic expiration
 - Password Policy: Enterprise password requirements enforced by OIDC provider
 
-### Performance Optimization
+### Performance Optimization and Monitoring
 
-**Frontend Performance:**
-- Bundle Size Target: <500KB initial bundle, code splitting by route
-- Loading Strategy: Lazy loading for audit dashboard and admin components
-- Caching Strategy: Aggressive caching for static assets, service worker for offline support
+#### Frontend Performance Strategy
 
-**Backend Performance:**
-- Response Time Target: <200ms for API calls, <2s for command execution
-- Database Optimization: Connection pooling, query optimization, read replicas
-- Caching Strategy: Redis caching for NLP responses, session data, and frequent queries
+**Core Web Vitals Monitoring (MANDATORY):**
+```typescript
+// web/src/utils/performance-monitoring.ts
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+
+interface PerformanceMetric {
+  name: string;
+  value: number;
+  id: string;
+  timestamp: number;
+  url: string;
+  userAgent: string;
+}
+
+function sendToAnalytics(metric: PerformanceMetric) {
+  // Send to backend performance monitoring service
+  fetch('/api/v1/metrics/frontend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(metric),
+  }).catch(console.error);
+}
+
+// Real User Monitoring (RUM) implementation
+export function initializePerformanceMonitoring() {
+  const sendMetric = (metric: any) => {
+    sendToAnalytics({
+      name: metric.name,
+      value: metric.value,
+      id: metric.id,
+      timestamp: Date.now(),
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+    });
+  };
+
+  // Core Web Vitals
+  getCLS(sendMetric);  // Cumulative Layout Shift
+  getFID(sendMetric);  // First Input Delay
+  getLCP(sendMetric);  // Largest Contentful Paint
+  getFCP(sendMetric);  // First Contentful Paint
+  getTTFB(sendMetric); // Time to First Byte
+}
+```
+
+**Performance Targets and Monitoring:**
+- **Largest Contentful Paint (LCP):** <2.5s (Target), <3s (Warning), >3s (Alert)
+- **First Input Delay (FID):** <100ms (Target), <200ms (Warning), >200ms (Alert)
+- **Cumulative Layout Shift (CLS):** <0.1 (Target), <0.2 (Warning), >0.2 (Alert)
+- **Time to Interactive (TTI):** <3s on 3G networks
+- **First Contentful Paint (FCP):** <1.5s
+- **Speed Index:** <3s
+
+**Bundle Performance Optimization:**
+```javascript
+// vite.config.ts - Production build optimization
+import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig({
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor libraries
+          vendor: ['react', 'react-dom'],
+          utils: ['lodash-es', 'date-fns'],
+          
+          // Feature-based chunks
+          auth: ['@auth0/auth0-spa-js'],
+          chat: ['./src/components/chat', './src/stores/chat'],
+          audit: ['./src/components/audit', './src/stores/audit'],
+          
+          // UI library chunk
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast'],
+        },
+      },
+    },
+    // Performance budgets
+    chunkSizeWarningLimit: 500,
+  },
+  plugins: [
+    // Bundle analysis
+    visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+    }),
+  ],
+});
+```
+
+**Runtime Performance Monitoring:**
+```typescript
+// web/src/hooks/usePerformanceMetrics.ts
+export function usePerformanceMetrics() {
+  const [metrics, setMetrics] = useState<PerformanceEntry[]>([]);
+
+  useEffect(() => {
+    // Monitor long tasks (>50ms)
+    const observer = new PerformanceObserver((list) => {
+      const longTasks = list.getEntries().filter(
+        entry => entry.duration > 50
+      );
+      
+      longTasks.forEach(task => {
+        console.warn(`Long task detected: ${task.duration}ms`);
+        sendToAnalytics({
+          name: 'long-task',
+          value: task.duration,
+          id: 'lt-' + Date.now(),
+          timestamp: task.startTime,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        });
+      });
+    });
+
+    observer.observe({ entryTypes: ['longtask'] });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // WebSocket performance monitoring
+  const monitorWebSocketPerformance = useCallback((ws: WebSocket) => {
+    const startTime = performance.now();
+    
+    ws.addEventListener('open', () => {
+      const connectionTime = performance.now() - startTime;
+      sendToAnalytics({
+        name: 'websocket-connection-time',
+        value: connectionTime,
+        id: 'ws-' + Date.now(),
+        timestamp: startTime,
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+      });
+    });
+  }, []);
+
+  return { metrics, monitorWebSocketPerformance };
+}
+```
+
+**Image and Asset Optimization:**
+```typescript
+// web/src/components/common/OptimizedImage.tsx
+interface OptimizedImageProps {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  priority?: boolean;
+}
+
+export function OptimizedImage({ 
+  src, 
+  alt, 
+  width, 
+  height, 
+  priority = false 
+}: OptimizedImageProps) {
+  return (
+    <picture>
+      <source 
+        srcSet={`${src}?format=webp&width=${width}`} 
+        type="image/webp" 
+      />
+      <source 
+        srcSet={`${src}?format=avif&width=${width}`} 
+        type="image/avif" 
+      />
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+      />
+    </picture>
+  );
+}
+```
+
+#### Backend Performance Strategy
+
+**Response Time Targets:**
+- **API Gateway:** <200ms for 95th percentile, <100ms for 50th percentile
+- **NLP Service:** <2s for command translation, <500ms for cached responses
+- **Audit Service:** <300ms for log ingestion, <1s for search queries
+- **Kubernetes Operations:** <5s for command execution with user feedback
+
+**Database Performance Optimization:**
+```go
+// pkg/database/performance.go
+type DatabaseConfig struct {
+    MaxOpenConns    int           `yaml:"max_open_conns"`
+    MaxIdleConns    int           `yaml:"max_idle_conns"`
+    ConnMaxLifetime time.Duration `yaml:"conn_max_lifetime"`
+    ConnMaxIdleTime time.Duration `yaml:"conn_max_idle_time"`
+    
+    // Read replicas for performance
+    ReadReplicas []string `yaml:"read_replicas"`
+    
+    // Query timeout settings
+    DefaultTimeout time.Duration `yaml:"default_timeout"`
+    LongTimeout    time.Duration `yaml:"long_timeout"`
+}
+
+func NewOptimizedDatabase(config DatabaseConfig) *sql.DB {
+    db, err := sql.Open("postgres", config.DSN)
+    if err != nil {
+        log.Fatal("Failed to connect to database", err)
+    }
+    
+    // Connection pool optimization
+    db.SetMaxOpenConns(config.MaxOpenConns)     // Default: 25
+    db.SetMaxIdleConns(config.MaxIdleConns)     // Default: 10
+    db.SetConnMaxLifetime(config.ConnMaxLifetime) // Default: 5min
+    db.SetConnMaxIdleTime(config.ConnMaxIdleTime) // Default: 5min
+    
+    return db
+}
+```
+
+**Caching Strategy Implementation:**
+```go
+// pkg/cache/performance.go
+type PerformanceCacheConfig struct {
+    // NLP Response Caching
+    NLPCacheTTL time.Duration `yaml:"nlp_cache_ttl"` // Default: 1h
+    
+    // Session Data Caching  
+    SessionCacheTTL time.Duration `yaml:"session_cache_ttl"` // Default: 24h
+    
+    // API Response Caching
+    APICacheTTL time.Duration `yaml:"api_cache_ttl"` // Default: 5min
+}
+
+type CacheKey struct {
+    Prefix    string
+    UserID    string
+    Operation string
+    Hash      string
+}
+
+func (c *CacheService) CacheNLPResponse(
+    ctx context.Context, 
+    query string, 
+    userID string, 
+    response *NLPResponse,
+) error {
+    key := CacheKey{
+        Prefix:    "nlp",
+        UserID:    userID,
+        Operation: "translate",
+        Hash:      hashQuery(query),
+    }
+    
+    return c.redis.Set(
+        ctx, 
+        key.String(), 
+        response, 
+        c.config.NLPCacheTTL,
+    ).Err()
+}
+```
+
+#### Performance Monitoring Dashboard
+
+**Metrics Collection:**
+```yaml
+# Performance metrics collected
+frontend_metrics:
+  user_experience:
+    - largest_contentful_paint
+    - first_input_delay
+    - cumulative_layout_shift
+    - time_to_interactive
+    
+  resource_performance:
+    - bundle_size_total
+    - chunk_load_times
+    - api_response_times
+    - websocket_connection_time
+    
+  user_behavior:
+    - page_load_frequency
+    - feature_usage_patterns
+    - error_rate_by_component
+    
+backend_metrics:
+  api_performance:
+    - request_duration_histogram
+    - requests_per_second
+    - error_rate_by_endpoint
+    - database_query_duration
+    
+  system_performance:
+    - memory_usage_percent
+    - cpu_utilization_percent
+    - disk_io_operations
+    - network_bytes_transferred
+    
+  business_metrics:
+    - commands_processed_per_hour
+    - user_session_duration
+    - feature_adoption_rates
+```
+
+**Alerting Thresholds:**
+```yaml
+# Performance alerting configuration
+performance_alerts:
+  critical:
+    - metric: "frontend_lcp_p95"
+      threshold: "> 4s"
+      description: "95th percentile LCP above 4 seconds"
+      
+    - metric: "api_response_time_p95"
+      threshold: "> 500ms"
+      description: "95th percentile API response above 500ms"
+      
+    - metric: "websocket_error_rate"
+      threshold: "> 5%"
+      description: "WebSocket connection error rate above 5%"
+      
+  warning:
+    - metric: "bundle_size_total"
+      threshold: "> 600KB"
+      description: "Total bundle size above 600KB"
+      
+    - metric: "memory_usage_percent"
+      threshold: "> 80%"
+      description: "Memory usage above 80%"
+```
+
+**Performance CI/CD Integration:**
+```yaml
+# .github/workflows/performance.yml
+performance_budgets:
+  lighthouse_thresholds:
+    performance: 90
+    accessibility: 95
+    best_practices: 95
+    seo: 90
+    
+  bundle_size_limits:
+    initial_js: "500KB"
+    initial_css: "50KB"
+    total_size: "1MB"
+    
+  api_performance:
+    response_time_p95: "200ms"
+    error_rate: "< 1%"
+    availability: "> 99.5%"
+```
 
 ## Unified Project Structure
 
 ```
-kubechat/
-├── .github/                    # CI/CD workflows
+kube-chat/                     # **BMAD Method Structure - Phase 1 Model 1**
+├── .bmad/                     # BMAD framework - story-driven development
+│   ├── agents/                # AI agents for development tasks
+│   ├── cache/                 # BMAD caching and state
+│   ├── planning/              # Epic and story planning
+│   ├── stories/               # Active story tracking
+│   └── templates/             # Story and task templates
+├── .bmad-core/                # Core BMAD framework (don't modify)
+├── .github/                   # CI/CD workflows
 │   └── workflows/
-│       ├── ci.yaml             # Build and test pipeline
-│       ├── helm-package.yaml   # Helm chart packaging and publishing
-│       └── container-build.yaml # Container image builds
-├── cmd/                        # Go application entry points
-│   ├── operator/               # KubeChat operator main
-│   ├── api-gateway/            # API gateway service main
-│   ├── nlp-service/            # NLP processing service main
-│   └── audit-service/          # Audit logging service main
-├── pkg/                        # Shared Go packages
-│   ├── apis/                   # Kubernetes API definitions (CRDs)
-│   ├── controllers/            # Kubernetes controllers
-│   ├── clients/                # Kubernetes and external API clients
-│   ├── models/                 # Shared data models
-│   ├── middleware/             # HTTP middleware (auth, logging, CORS)
-│   ├── nlp/                    # Natural language processing logic
-│   ├── audit/                  # Audit logging utilities
-│   └── utils/                  # Common utilities and helpers
-├── web/                        # React frontend application
+│       └── ci.yml             # Build and test pipeline
+├── cmd/                       # **Phase 1 Model 1 Go Services**
+│   ├── api-gateway/           # API gateway service main
+│   ├── nlp-service/           # NLP processing service main
+│   └── audit-service/         # Audit logging service main
+├── pkg/                       # Shared Go packages
+│   ├── audit/                 # Audit logging utilities and interfaces
+│   ├── clients/               # Kubernetes and external API clients
+│   ├── config/                # Configuration management
+│   ├── middleware/            # HTTP middleware (auth, logging, CORS)
+│   ├── models/                # Shared data models and CRDs
+│   └── nlp/                   # Natural language processing logic
+├── web/                       # **Epic 4 - React Web Interface**
 │   ├── src/
-│   │   ├── components/         # UI components with safety indicators
-│   │   ├── pages/              # Page components (Chat, Audit, Settings)
-│   │   ├── hooks/              # Custom React hooks for WebSocket, auth
-│   │   ├── services/           # API client services
-│   │   ├── stores/             # Zustand state management
-│   │   ├── styles/             # Tailwind CSS configuration
-│   │   └── utils/              # Frontend utilities and helpers
-│   ├── public/                 # Static assets and favicon
-│   ├── tests/                  # Frontend tests (Vitest + Testing Library)
-│   ├── Dockerfile              # Frontend container build
-│   └── package.json
-├── charts/                     # Helm charts
-│   └── kubechat/              # Main KubeChat Helm chart
-│       ├── Chart.yaml          # Chart metadata and dependencies
-│       ├── values.yaml         # Default configuration values
-│       ├── values-production.yaml  # Production configuration
-│       ├── values-enterprise.yaml  # Enterprise configuration
-│       ├── templates/          # Kubernetes manifests
-│       │   ├── operator/       # Operator deployment and RBAC
-│       │   ├── services/       # Microservice deployments
-│       │   ├── web/            # Frontend deployment and service
-│       │   ├── storage/        # PostgreSQL and Redis configurations
-│       │   ├── monitoring/     # Prometheus and Grafana (optional)
-│       │   ├── security/       # Dex, cert-manager, secrets
-│       │   └── ingress/        # Ingress controllers and routes
-│       ├── crds/               # Custom Resource Definitions
-│       └── charts/             # Dependency charts (operators)
-├── config/                     # Configuration files
-│   ├── samples/                # Sample CRD configurations
-│   ├── rbac/                   # RBAC definitions
-│   ├── manager/                # Operator manager configuration
-│   └── default/                # Default Kustomize configuration
-├── hack/                       # Development and build scripts
-│   ├── install-deps.sh         # Install development dependencies
-│   ├── generate-manifests.sh   # Generate Kubernetes manifests
-│   ├── build-images.sh         # Build all container images
-│   └── deploy-local.sh         # Local development deployment
-├── docs/                       # Documentation
-│   ├── prd.md
-│   ├── front-end-spec.md
-│   ├── architecture.md
-│   ├── installation/           # Installation and deployment guides
-│   ├── development/            # Development setup and guidelines
-│   └── api/                    # API documentation
-├── scripts/                    # Operational scripts
-│   ├── backup/                 # Database backup scripts
-│   ├── monitoring/             # Monitoring setup scripts
-│   └── security/               # Security scanning and hardening
-├── tests/                      # Integration and E2E tests
-│   ├── e2e/                    # End-to-end tests (Playwright)
-│   ├── integration/            # Integration tests
-│   └── fixtures/               # Test data and configurations
-├── .env.example                # Environment template
-├── Makefile                    # Build and development tasks
-├── Dockerfile.operator         # Operator container build
-├── Dockerfile.services         # Services container build
-├── go.mod                      # Go module definition
-├── go.sum                      # Go module checksums
-└── README.md                   # Project overview and setup
+│   │   ├── components/        # Reusable React components
+│   │   ├── pages/             # Page components and routing
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── utils/             # Frontend utilities
+│   │   └── styles/            # CSS and styling
+│   ├── public/                # Static assets
+│   ├── package.json           # Frontend dependencies
+│   └── vite.config.ts         # Build configuration
+├── config/                    # Kubernetes configuration
+│   ├── crd/                   # Custom Resource Definitions
+│   │   └── bases/             # Base CRD definitions
+│   └── rbac/                  # RBAC definitions
+├── deploy/                    # **Phase 1 Model 1 Deployment**
+│   ├── helm/                  # **PRIMARY**: Helm charts for customer deployment
+│   └── manifests/             # Raw Kubernetes manifests
+├── docs/                      # **Enterprise Documentation**
+│   ├── architecture/          # Technical architecture docs
+│   ├── deployment/            # Deployment guides (on-premises focus)
+│   ├── development/           # Development setup (Rancher Desktop)
+│   ├── api/                   # API documentation
+│   ├── examples/              # Usage examples
+│   ├── operations/            # Operational procedures
+│   ├── qa/                    # QA gates and testing
+│   ├── stories/               # User stories (BMAD)
+│   ├── user-guides/           # End-user documentation
+│   └── prd.md                 # Product Requirements Document
+├── tests/                     # Testing (Phase 1 focus)
+│   └── integration/           # Integration tests for services
+├── examples/                  # Sample configurations and demos
+├── hack/                      # Development and build scripts
+├── api/                       # OpenAPI specs and protobuf definitions
+├── bin/                       # Compiled binaries
+├── go.mod                     # Go module definition
+├── go.sum                     # Go module checksums
+├── package.json               # Root package.json for tooling
+├── pnpm-workspace.yaml        # Workspace configuration
+├── turbo.json                 # Turborepo build configuration
+└── README.md                  # Project overview
 ```
 
-## 🏗️ KubeChat Full-Stack Architecture Complete!
+## 🏗️ KubeChat Phase 1 Model 1 Architecture Complete!
 
-This comprehensive architecture document establishes the technical foundation for KubeChat's enterprise-grade natural language Kubernetes management platform. The design successfully addresses all PRD requirements including:
+This comprehensive architecture document establishes the technical foundation for **KubeChat Phase 1: Model 1 (On-Premises FREE Platform)** - our **primary development target**. The design successfully addresses all PRD requirements including:
 
-✅ **Microservices Architecture** with independent scaling for NLP, audit, and API services  
-✅ **Enterprise Security** with mutual TLS, comprehensive audit logging, and RBAC integration  
-✅ **Compliance-Ready Infrastructure** supporting SOC 2, HIPAA, and regulatory requirements  
-✅ **Real-Time Chat Capabilities** with WebSocket integration and safety confirmation workflows  
-✅ **Horizontal Scalability** supporting 100+ concurrent users with sub-200ms response times  
-✅ **Kubernetes-Native Integration** through custom operator with declarative resource management  
+✅ **Complete Data Sovereignty** - 100% customer-controlled infrastructure with zero vendor access  
+✅ **Air-Gap Capability** - Offline installation and operation without external dependencies  
+✅ **Go-Based Microservices** - api-gateway, nlp-service, audit-service (not Node.js)  
+✅ **React Web Interface** - Epic 4 includes professional chat interface for Phase 1  
+✅ **Enterprise Security** - OIDC/SAML integration, comprehensive audit logging, RBAC integration  
+✅ **1000+ Concurrent Users** - Performance targets as specified in PRD NFR-1  
+✅ **Compliance-Ready Infrastructure** - SOC 2, HIPAA, FedRAMP compatible audit trails  
+✅ **Helm-Native Deployment** - Single-command customer installation with air-gap bundles  
 
-The architecture balances enterprise security requirements with developer productivity, regulatory compliance with operational efficiency, and technical sophistication with maintainable complexity.
+The architecture prioritizes **zero vendor lock-in**, **enterprise security**, and **complete customer control** as required for Phase 1 Model 1.
 
-**Ready for Development Team Handoff** with comprehensive component specifications, API definitions, deployment strategies, and security frameworks.
+**Ready for BMAD-Driven Development** with comprehensive component specifications, API definitions, deployment strategies, and alignment with current story-driven development approach.

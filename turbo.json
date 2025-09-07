@@ -1,0 +1,56 @@
+{
+  "$schema": "https://turbo.build/schema.v2.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ],
+      "outputs": [
+        "dist/**",
+        "build/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".eslintrc*",
+        "eslint.config.*"
+      ]
+    },
+    "preview": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.*",
+        "jest.config.*",
+        "playwright.config.*"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
+    "clean": {
+      "cache": false
+    }
+  },
+  "globalDependencies": [
+    "**/.env*"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI"
+  ]
+}
