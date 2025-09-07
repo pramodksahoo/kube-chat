@@ -720,46 +720,29 @@ func (r *InteractivePermissionResolver) getSessionFromMemory(ctx context.Context
 // Add memory storage field to resolver for testing purposes
 var resolverSessions = make(map[string]*InteractiveResolutionSession)
 
-// Override the resolver methods to use memory storage in tests
-func (r *InteractivePermissionResolver) GetSession(ctx context.Context, sessionID string) (*InteractiveResolutionSession, error) {
-	if r.redisClient == nil {
-		// Use memory storage for testing
-		session, exists := resolverSessions[sessionID]
-		if !exists {
-			return nil, fmt.Errorf("session not found: %s", sessionID)
-		}
-
-		if time.Now().After(session.ExpiresAt) {
-			session.Status = SessionStatusExpired
-			return session, fmt.Errorf("session has expired")
-		}
-
-		return session, nil
+// Helper functions for testing - no method overrides
+func getTestSession(sessionID string) (*InteractiveResolutionSession, error) {
+	session, exists := resolverSessions[sessionID]
+	if !exists {
+		return nil, fmt.Errorf("session not found: %s", sessionID)
 	}
-	return r.getSession(ctx, sessionID)
+
+	if time.Now().After(session.ExpiresAt) {
+		session.Status = SessionStatusExpired
+		return session, fmt.Errorf("session has expired")
+	}
+
+	return session, nil
 }
 
-func (r *InteractivePermissionResolver) CancelSession(ctx context.Context, sessionID string) error {
-	if r.redisClient == nil {
-		// Use memory storage for testing
-		session, exists := resolverSessions[sessionID]
-		if !exists {
-			return fmt.Errorf("session not found: %s", sessionID)
-		}
-
-		session.Status = SessionStatusCancelled
-		session.UpdatedAt = time.Now()
-		resolverSessions[sessionID] = session
-		return nil
-	}
-
-	session, err := r.getSession(ctx, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to get session: %w", err)
+func cancelTestSession(sessionID string) error {
+	session, exists := resolverSessions[sessionID]
+	if !exists {
+		return fmt.Errorf("session not found: %s", sessionID)
 	}
 
 	session.Status = SessionStatusCancelled
 	session.UpdatedAt = time.Now()
-
-	return r.saveSession(ctx, session)
+	resolverSessions[sessionID] = session
+	return nil
 }

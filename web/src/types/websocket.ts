@@ -1,6 +1,6 @@
 export interface WebSocketMessage {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'error' | 'status';
+  type: 'user' | 'assistant' | 'system' | 'error' | 'status' | 'heartbeat';
   content: string;
   timestamp: string;
   userId?: string;

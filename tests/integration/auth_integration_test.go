@@ -133,7 +133,7 @@ func (suite *AuthIntegrationTestSuite) SetupSuite() {
 	// Try to initialize authentication middleware 
 	// If JWT service is unavailable, we'll still test what we can
 	if suite.jwtService != nil {
-		authMiddleware, err := middleware.NewAuthMiddleware(suite.testProviders, suite.jwtService)
+		authMiddleware, err := middleware.NewAuthMiddleware(suite.testProviders, suite.jwtService, nil, nil)
 		if err != nil {
 			suite.T().Logf("Auth middleware initialization failed (may be expected): %v", err)
 			suite.authMiddleware = nil

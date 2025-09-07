@@ -252,7 +252,7 @@ const CommandExecutionStatus: React.FC<CommandExecutionStatusProps> = ({
       {isExpanded && (
         <div className="px-4 py-3">
           <div className="space-y-3">
-            {steps.map((step, index) => (
+            {steps.map((step, _index) => (
               <div
                 key={step.id}
                 className={cn(

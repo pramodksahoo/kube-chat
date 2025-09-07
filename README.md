@@ -37,6 +37,7 @@ tests/integration/       # End-to-end integration tests
 ### Prerequisites
 
 - Go 1.22+
+- Node.js 18+ and pnpm (for web frontend)
 - Basic understanding of kubectl commands
 
 ### Installation
@@ -48,15 +49,32 @@ cd kube-chat
 go mod tidy
 ```
 
-2. **Run tests to verify**:
+2. **Set up the web frontend**:
 ```bash
-go test ./... -v
+cd web
+pnpm install
+# Start development server (ALWAYS runs on port 3001)
+pnpm dev
 ```
 
-3. **Start the service**:
+3. **Run tests to verify**:
+```bash
+go test ./... -v
+cd web && pnpm test
+```
+
+4. **Start the NLP service**:
 ```bash
 go run cmd/nlp-service/main.go
 ```
+
+### 🚨 Web Application Port Configuration
+
+**The web application ALWAYS runs on port 3001**
+
+- **Frontend URL**: `http://localhost:3001`
+- **Do NOT use port 3000** - Configured with `strictPort: true`
+- **Team members**: Bookmark `http://localhost:3001`
 
 ## API Endpoints
 

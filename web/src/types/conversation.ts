@@ -19,8 +19,8 @@ export interface ConversationFilter {
   query?: string;
   userId?: string;
   dateRange?: {
-    from: Date;
-    to: Date;
+    from?: Date;
+    to?: Date;
   };
   tags?: string[];
   archived?: boolean;

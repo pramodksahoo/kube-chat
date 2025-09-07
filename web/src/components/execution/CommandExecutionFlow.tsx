@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react';
 import { cn } from '@/utils/cn';
 import CommandExecutionStatus from './CommandExecutionStatus';
 import { useExecutionStatus } from '@/hooks/useExecutionStatus';
-import type { ExecutionStep } from './CommandExecutionStatus';
 
 export interface CommandExecutionFlowProps {
   command: string;
@@ -55,7 +54,7 @@ const CommandExecutionFlow: React.FC<CommandExecutionFlowProps> = ({
   const handleRetryExecution = useCallback(() => {
     // Reset state and start new execution
     setLocalExecutionId(undefined);
-    handleStartExecution();
+    void handleStartExecution();
   }, [handleStartExecution]);
 
   // Monitor execution completion
@@ -70,7 +69,7 @@ const CommandExecutionFlow: React.FC<CommandExecutionFlowProps> = ({
   // Auto-start execution if we have a command but no execution ID
   React.useEffect(() => {
     if (command && !localExecutionId && status === 'queued') {
-      handleStartExecution();
+      void handleStartExecution();
     }
   }, [command, localExecutionId, status, handleStartExecution]);
 

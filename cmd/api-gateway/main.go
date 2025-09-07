@@ -2,12 +2,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -18,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 
+	"github.com/pramodksahoo/kube-chat/pkg/audit"
 	"github.com/pramodksahoo/kube-chat/pkg/middleware"
 	"github.com/pramodksahoo/kube-chat/pkg/models"
 )
@@ -34,6 +33,8 @@ type Config struct {
 	EnableSAML      bool                         `json:"enable_saml"`
 	SessionTimeout  time.Duration                 `json:"session_timeout"`
 	EnableWebSocket bool                         `json:"enable_websocket"`
+	AuditServiceURL string                       `json:"audit_service_url"`
+	EnableAudit     bool                         `json:"enable_audit"`
 }
 
 // APIGateway represents the main API Gateway service
@@ -45,18 +46,18 @@ type APIGateway struct {
 	samlProvider   *middleware.SAMLProvider
 	userService    models.UserService
 	sessionManager *models.ExtendedChatSessionManager
+	auditCollector middleware.EventCollectorInterface
 }
 
 // NewAPIGateway creates a new API Gateway instance
 func NewAPIGateway(config Config) (*APIGateway, error) {
 	// Create Fiber app with configuration
 	app := fiber.New(fiber.Config{
-		AppName:           "KubeChat API Gateway",
-		EnablePrintRoutes: config.Environment == "development",
-		ErrorHandler:      customErrorHandler,
-		IdleTimeout:       30 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		AppName:      "KubeChat API Gateway",
+		ErrorHandler: customErrorHandler,
+		IdleTimeout:  30 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	})
 
 	// Initialize JWT service
@@ -66,7 +67,7 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 	}
 
 	// Initialize authentication middleware
-	authMiddleware, err := middleware.NewAuthMiddleware(config.OIDCProviders, jwtService)
+	authMiddleware, err := middleware.NewAuthMiddleware(config.OIDCProviders, jwtService, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize auth middleware: %w", err)
 	}
@@ -74,7 +75,7 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 	// Initialize SAML provider if enabled
 	var samlProvider *middleware.SAMLProvider
 	if config.EnableSAML {
-		samlProvider, err = middleware.NewSAMLProvider(config.SAMLConfig, jwtService)
+		samlProvider, err = middleware.NewSAMLProvider(config.SAMLConfig, jwtService, nil)
 		if err != nil {
 			log.Printf("Warning: SAML provider initialization failed: %v", err)
 			// Don't fail startup, just disable SAML
@@ -88,6 +89,31 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 	// Initialize session manager
 	sessionManager := models.NewExtendedChatSessionManager()
 
+	// Initialize audit collector if enabled
+	var auditCollector middleware.EventCollectorInterface
+	if config.EnableAudit {
+		// Create audit storage
+		auditStorage, err := audit.NewPostgreSQLAuditStorage(
+			getEnv("AUDIT_DATABASE_URL", "postgres://user:password@localhost/kubechat_audit?sslmode=disable"), 
+			365*7, // 7 years retention
+		)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize audit storage: %v", err)
+			config.EnableAudit = false
+		} else {
+			// Create event collector
+			collectorConfig := audit.DefaultCollectorConfig()
+			auditCollector = audit.NewEventCollector(auditStorage, collectorConfig)
+			
+			// Start the collector
+			if err := auditCollector.(*audit.EventCollector).Start(); err != nil {
+				log.Printf("Warning: Failed to start audit collector: %v", err)
+				config.EnableAudit = false
+				auditCollector = nil
+			}
+		}
+	}
+
 	return &APIGateway{
 		app:            app,
 		config:         config,
@@ -96,6 +122,7 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 		samlProvider:   samlProvider,
 		userService:    userService,
 		sessionManager: sessionManager,
+		auditCollector: auditCollector,
 	}, nil
 }
 
@@ -114,24 +141,51 @@ func (gw *APIGateway) setupMiddleware() {
 
 	// CORS middleware
 	gw.app.Use(cors.New(cors.Config{
-		AllowOrigins: strings.Join(gw.config.CORSOrigins, ","),
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+		AllowOrigins: gw.config.CORSOrigins,
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowCredentials: true,
 	}))
 
 	// Health check middleware
-	gw.app.Use(healthcheck.New(healthcheck.Config{
-		LivenessEndpoint:  "/health/live",
-		ReadinessEndpoint: "/health/ready",
-		LivenessProbe: func(c fiber.Ctx) bool {
-			return true // API Gateway is alive
-		},
-		ReadinessProbe: func(c fiber.Ctx) bool {
-			// Check if critical services are ready
-			return gw.jwtService != nil && gw.authMiddleware != nil
-		},
-	}))
+	gw.app.Use(healthcheck.New())
+
+	// Audit middleware (if enabled)
+	if gw.config.EnableAudit && gw.auditCollector != nil {
+		auditConfig := middleware.DefaultAuditConfig()
+		auditConfig.Collector = gw.auditCollector
+		auditConfig.ServiceName = "api-gateway"
+		auditConfig.ServiceVersion = "1.0.0"
+		
+		// Configure user context extractor to use JWT claims
+		auditConfig.UserContextExtractor = func(c fiber.Ctx) (*models.User, *models.SessionAuthContext, error) {
+			// Try to get user from JWT claims if authenticated
+			if userClaims := c.Locals("user"); userClaims != nil {
+				claims := userClaims.(*middleware.JWTClaims)
+				
+				// Get user from service
+				user, err := gw.userService.GetUser(claims.UserID)
+				if err != nil {
+					return nil, nil, fmt.Errorf("user not found: %w", err)
+				}
+				
+				// Create session context
+				sessionCtx := &models.SessionAuthContext{
+					UserID:    claims.UserID,
+					SessionID: claims.SessionID,
+					IPAddress: c.IP(),
+					UserAgent: c.Get("User-Agent"),
+				}
+				
+				return user, sessionCtx, nil
+			}
+			
+			// Return error for unauthenticated requests
+			return nil, nil, fmt.Errorf("no user context available")
+		}
+		
+		gw.app.Use(middleware.NewAuditMiddleware(auditConfig))
+	}
 }
 
 // setupAuthRoutes configures authentication-related routes
@@ -567,6 +621,15 @@ func (gw *APIGateway) Start() error {
 
 // Shutdown gracefully shuts down the API Gateway
 func (gw *APIGateway) Shutdown() error {
+	// Stop audit collector if running
+	if gw.auditCollector != nil {
+		if collector, ok := gw.auditCollector.(*audit.EventCollector); ok {
+			if err := collector.Stop(); err != nil {
+				log.Printf("Error stopping audit collector: %v", err)
+			}
+		}
+	}
+	
 	return gw.app.Shutdown()
 }
 
@@ -608,6 +671,8 @@ func main() {
 		EnableSAML:      getEnv("ENABLE_SAML", "false") == "true",
 		SessionTimeout:  8 * time.Hour,
 		EnableWebSocket: true,
+		EnableAudit:     getEnv("ENABLE_AUDIT", "true") == "true",
+		AuditServiceURL: getEnv("AUDIT_SERVICE_URL", "http://localhost:8081"),
 	}
 
 	// Create API Gateway

@@ -42,7 +42,7 @@ func (suite *JWTRBACIntegrationTestSuite) SetupSuite() {
 	}
 
 	// Setup JWT service
-	config := middleware.JWTConfig{
+	jwtConfig := middleware.JWTConfig{
 		RedisAddr:       "localhost:6379",
 		RedisDB:         15,
 		TokenDuration:   time.Hour,
@@ -50,7 +50,7 @@ func (suite *JWTRBACIntegrationTestSuite) SetupSuite() {
 		Issuer:          "kubechat-integration-test",
 	}
 
-	jwtService, err := middleware.NewJWTService(config)
+	jwtService, err := middleware.NewJWTService(jwtConfig)
 	require.NoError(suite.T(), err)
 	suite.jwtService = jwtService
 
@@ -71,7 +71,6 @@ func (suite *JWTRBACIntegrationTestSuite) TearDownSuite() {
 // TestOktaUserFlow tests the complete flow for an Okta user
 func (suite *JWTRBACIntegrationTestSuite) TestOktaUserFlow() {
 	t := suite.T()
-	ctx := context.Background()
 
 	// Simulate OIDC claims from Okta
 	oidcClaims := map[string]interface{}{
@@ -239,6 +238,7 @@ func (suite *JWTRBACIntegrationTestSuite) TestSessionPersistence() {
 	// Generate token
 	tokenPair, err := suite.jwtService.GenerateTokenWithClaims(claims)
 	require.NoError(t, err)
+	assert.NotEmpty(t, tokenPair.AccessToken)
 
 	// Verify session was stored in Redis
 	sessionKey := "kubechat:session:" + claims.SessionID

@@ -1,181 +1,191 @@
-# Unified Project Structure
+# KubeChat Source Tree - Phase 1 Model 1 (On-Premises)
 
-## Complete Directory Structure
+## Current Project Structure (BMAD Method)
 
 ```
 kube-chat/
+├── .bmad/                      # BMAD framework - project management
+│   ├── agents/                 # AI agents for development tasks
+│   ├── cache/                  # BMAD caching and state
+│   ├── planning/               # Epic and story planning
+│   ├── stories/                # Active story tracking
+│   └── templates/              # Story and task templates
+├── .bmad-core/                 # Core BMAD framework (don't modify)
+│   ├── agents/                 # Core agent definitions
+│   ├── checklists/             # Quality and validation checklists
+│   ├── tasks/                  # Task management system
+│   └── workflows/              # BMAD development workflows
 ├── .github/                    # CI/CD workflows
 │   └── workflows/
-│       ├── ci.yaml             # Build and test pipeline
-│       ├── helm-package.yaml   # Helm chart packaging and publishing
-│       └── container-build.yaml # Container image builds
-├── cmd/                        # Go application entry points
-│   ├── operator/               # KubeChat operator main
+│       └── ci.yml              # Build and test pipeline
+├── cmd/                        # Go application entry points (Phase 1)
 │   ├── api-gateway/            # API gateway service main
 │   ├── nlp-service/            # NLP processing service main
 │   └── audit-service/          # Audit logging service main
 ├── pkg/                        # Shared Go packages
-│   ├── apis/                   # Kubernetes API definitions (CRDs)
-│   ├── controllers/            # Kubernetes controllers
+│   ├── audit/                  # Audit logging utilities and interfaces
 │   ├── clients/                # Kubernetes and external API clients
-│   ├── models/                 # Shared data models
+│   ├── config/                 # Configuration management
 │   ├── middleware/             # HTTP middleware (auth, logging, CORS)
-│   ├── nlp/                    # Natural language processing logic
-│   ├── audit/                  # Audit logging utilities
-│   └── utils/                  # Common utilities and helpers
-├── web/                        # React frontend application
-│   ├── src/
-│   │   ├── components/         # UI components with safety indicators
-│   │   ├── pages/              # Page components (Chat, Audit, Settings)
-│   │   ├── hooks/              # Custom React hooks for WebSocket, auth
-│   │   ├── services/           # API client services
-│   │   ├── stores/             # Zustand state management
-│   │   ├── styles/             # Tailwind CSS configuration
-│   │   └── utils/              # Frontend utilities and helpers
-│   ├── public/                 # Static assets and favicon
-│   ├── tests/                  # Frontend tests (Vitest + Testing Library)
-│   ├── Dockerfile              # Frontend container build
-│   └── package.json
-├── charts/                     # Helm charts
-│   └── kubechat/              # Main KubeChat Helm chart
-│       ├── Chart.yaml          # Chart metadata and dependencies
-│       ├── values.yaml         # Default configuration values
-│       ├── values-production.yaml  # Production configuration
-│       ├── values-enterprise.yaml  # Enterprise configuration
-│       ├── templates/          # Kubernetes manifests
-│       │   ├── operator/       # Operator deployment and RBAC
-│       │   ├── services/       # Microservice deployments
-│       │   ├── web/            # Frontend deployment and service
-│       │   ├── storage/        # PostgreSQL and Redis configurations
-│       │   ├── monitoring/     # Prometheus and Grafana (optional)
-│       │   ├── security/       # Dex, cert-manager, secrets
-│       │   └── ingress/        # Ingress controllers and routes
-│       ├── crds/               # Custom Resource Definitions
-│       └── charts/             # Dependency charts (operators)
-├── config/                     # Configuration files
-│   ├── samples/                # Sample CRD configurations
-│   ├── rbac/                   # RBAC definitions
-│   ├── manager/                # Operator manager configuration
-│   └── default/                # Default Kustomize configuration
+│   ├── models/                 # Shared data models and CRDs
+│   └── nlp/                    # Natural language processing logic
+├── config/                     # Kubernetes configuration
+│   ├── crd/                    # Custom Resource Definitions
+│   │   └── bases/              # Base CRD definitions
+│   └── rbac/                   # RBAC definitions
+├── deploy/                     # Deployment configurations
+│   ├── helm/                   # Helm charts (Phase 1 Model 1 primary)
+│   └── manifests/              # Raw Kubernetes manifests
+├── docs/                       # Documentation (comprehensive)
+│   ├── architecture/           # Technical architecture docs
+│   ├── deployment/             # Deployment guides (on-premises focus)
+│   ├── development/            # Development setup (Rancher Desktop)
+│   ├── api/                    # API documentation
+│   ├── examples/               # Usage examples
+│   ├── operations/             # Operational procedures
+│   ├── qa/                     # QA gates and testing
+│   ├── stories/                # User stories (BMAD)
+│   ├── user-guides/            # End-user documentation
+│   └── prd.md                  # Product Requirements Document
+├── tests/                      # Testing (Phase 1 focus)
+│   └── integration/            # Integration tests for services
+├── examples/                   # Sample configurations and demos
 ├── hack/                       # Development and build scripts
-│   ├── install-deps.sh         # Install development dependencies
-│   ├── generate-manifests.sh   # Generate Kubernetes manifests
-│   ├── build-images.sh         # Build all container images
-│   └── deploy-local.sh         # Local development deployment
-├── docs/                       # Documentation
-│   ├── prd.md
-│   ├── front-end-spec.md
-│   ├── architecture.md
-│   ├── installation/           # Installation and deployment guides
-│   ├── development/            # Development setup and guidelines
-│   └── api/                    # API documentation
-├── scripts/                    # Operational scripts
-│   ├── backup/                 # Database backup scripts
-│   ├── monitoring/             # Monitoring setup scripts
-│   └── security/               # Security scanning and hardening
-├── tests/                      # Integration and E2E tests
-│   ├── e2e/                    # End-to-end tests (Playwright)
-│   ├── integration/            # Integration tests
-│   └── fixtures/               # Test data and configurations
-├── .env.example                # Environment template
-├── Makefile                    # Build and development tasks
-├── Dockerfile.operator         # Operator container build
-├── Dockerfile.api-gateway      # API Gateway container build
-├── Dockerfile.nlp-service      # NLP Service container build
-├── Dockerfile.audit-service    # Audit Service container build
+├── api/                        # OpenAPI specs and protobuf definitions  
+├── bin/                        # Compiled binaries
+├── web/                        # 🌐 WEB INTERFACE - React frontend for Phase 1 Model 1
+│   ├── src/                    # React application source code
+│   │   ├── components/         # Reusable React components
+│   │   ├── pages/              # Page components and routing
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── utils/              # Frontend utilities
+│   │   └── styles/             # CSS and styling
+│   ├── public/                 # Static assets
+│   ├── package.json            # Frontend dependencies
+│   └── vite.config.ts          # Build configuration
 ├── go.mod                      # Go module definition
 ├── go.sum                      # Go module checksums
-├── package.json                # Root package.json for monorepo
-├── pnpm-workspace.yaml         # pnpm monorepo workspace configuration
-├── turbo.json                  # Turborepo configuration
-└── README.md                   # Project overview and setup instructions
+├── package.json                # Root package.json for tooling
+├── pnpm-workspace.yaml         # Workspace configuration
+├── turbo.json                  # Turborepo build configuration
+└── README.md                   # Project overview
 ```
 
-## File Organization Principles
+## Phase 1 Model 1 Organization Principles
 
-### Go Services (Backend)
+### BMAD Framework Integration
+- **`.bmad/`**: BMAD project management framework
+  - **`stories/`**: Current story tracking and progress
+  - **`planning/`**: Epic and milestone planning
+  - **`agents/`**: AI development agents and automation
+- **Follow BMAD method**: Always check `.bmad/stories/current-story.md` first
+
+### Go Services (Backend Only - Phase 1)
 
 #### Entry Points (`cmd/`)
-- Each microservice has its own main package under `cmd/`
-- Main packages should be minimal, primarily handling configuration and service startup
-- Example: `cmd/nlp-service/main.go`
+- **Phase 1 Model 1 services only**:
+  - `api-gateway/`: HTTP API and routing service
+  - `nlp-service/`: Natural language processing service  
+  - `audit-service/`: Audit logging and compliance service
+- **NO Kubernetes operator yet**: Will be added in later stories
+- Main packages handle configuration, service startup, and graceful shutdown
 
 #### Shared Packages (`pkg/`)
-- **`pkg/apis/`**: Kubernetes Custom Resource Definitions (CRDs)
-- **`pkg/controllers/`**: Kubernetes controller implementations
-- **`pkg/models/`**: Shared data structures and business entities
-- **`pkg/clients/`**: External service clients (Kubernetes API, OpenAI, etc.)
-- **`pkg/middleware/`**: HTTP middleware components
+- **`pkg/audit/`**: Comprehensive audit logging with tamper-proof storage
+- **`pkg/clients/`**: Kubernetes API client and external service integrations
+- **`pkg/config/`**: Configuration management and validation
+- **`pkg/middleware/`**: HTTP middleware (authentication, CORS, rate limiting)
+- **`pkg/models/`**: Shared data structures, CRDs, and business entities
 - **`pkg/nlp/`**: Natural language processing business logic
-- **`pkg/audit/`**: Audit logging utilities and interfaces
-- **`pkg/utils/`**: Common utilities and helper functions
 
-### React Frontend (`web/`)
+### Phase 1 Model 1 Configuration (`config/`)
+- **`crd/bases/`**: Custom Resource Definitions for Kubernetes integration
+- **`rbac/`**: Kubernetes RBAC definitions for on-premises deployment
+- **Focus**: Customer-controlled infrastructure and data sovereignty
 
-#### Source Organization (`web/src/`)
-- **`components/`**: Reusable UI components
-  - Organized by feature or by atomic design principles
-  - Include safety indicators and enterprise UI elements
-- **`pages/`**: Top-level page components (Chat, Audit Dashboard, Settings)
-- **`hooks/`**: Custom React hooks for WebSocket, authentication, API calls
-- **`services/`**: API client services and external integrations
-- **`stores/`**: Zustand state management stores
-- **`styles/`**: Tailwind CSS configuration and custom styles
-- **`utils/`**: Frontend utilities and helper functions
+### Deployment Structure (`deploy/`)
+- **`helm/`**: **PRIMARY** - Helm charts for on-premises deployment
+  - Single-command customer installation: `helm install kubechat ./helm/kubechat`
+  - Air-gap deployment support with offline bundles
+- **`manifests/`**: Raw Kubernetes YAML (for customers who prefer kubectl)
 
-### Configuration (`config/`)
-- **`samples/`**: Example configurations for CRDs and deployments
-- **`rbac/`**: Kubernetes RBAC definitions
-- **`manager/`**: Operator manager configuration
-- **`default/`**: Default Kustomize overlays
-
-### Testing Organization
-- **`tests/integration/`**: Cross-service integration tests
-- **`tests/e2e/`**: End-to-end user workflow tests with Playwright  
-- **`web/tests/`**: Frontend-specific tests with Vitest
+### Testing Organization (Phase 1 Focus)
+- **`tests/integration/`**: Service integration tests
 - **Co-located unit tests**: `*_test.go` files alongside Go source
+- **E2E tests**: End-to-end tests including web interface (Epic 4)
+- **Focus**: API testing, Kubernetes integration, audit trail validation, web UI testing
 
-### Documentation Structure
-- **`docs/architecture/`**: Detailed technical architecture (this folder)
-- **`docs/api/`**: OpenAPI specifications and API documentation
-- **`docs/installation/`**: Deployment and setup guides
-- **`docs/development/`**: Developer onboarding and contribution guides
+### Documentation Structure (Enterprise Grade)
+- **`docs/architecture/`**: Technical architecture aligned with Phase 1 Model 1
+- **`docs/deployment/`**: On-premises deployment guides with air-gap support
+- **`docs/development/`**: Rancher Desktop development environment
+- **`docs/api/`**: OpenAPI specifications for REST APIs
+- **`docs/operations/`**: Production operations and maintenance
+- **`docs/qa/`**: Quality gates and testing procedures (BMAD compliance)
 
-## Naming Conventions
+## Phase 1 Model 1 Naming Conventions
 
-### Go Files and Packages
-- **Package names**: lowercase, single word when possible
-- **File names**: lowercase with underscores (`user_service.go`)
-- **Test files**: `*_test.go` suffix
-- **Interface names**: noun or noun phrase (`UserService`, `CommandTranslator`)
+### Go Files and Packages (Primary Language)
+- **Package names**: lowercase, single word when possible (`audit`, `nlp`, `models`)
+- **File names**: lowercase with underscores (`audit_service.go`, `command_translator.go`)
+- **Test files**: `*_test.go` suffix (co-located with source)
+- **Interface names**: noun or noun phrase (`AuditService`, `CommandTranslator`)
+- **Struct names**: PascalCase (`ChatSession`, `AuditEvent`)
 
-### TypeScript/React Files
-- **Component files**: PascalCase (`ChatInterface.tsx`)
-- **Hook files**: camelCase with `use` prefix (`useWebSocket.ts`)
-- **Utility files**: camelCase (`apiClient.ts`)
-- **Constants**: SCREAMING_SNAKE_CASE in separate files
+### Kubernetes Resources (On-Premises Focus)
+- **CRD names**: lowercase with hyphens (`chat-session.yaml`, `audit-event.yaml`)
+- **ConfigMaps/Secrets**: descriptive, project-prefixed (`kubechat-config`, `kubechat-secrets`)
+- **Service names**: lowercase with hyphens matching cmd structure:
+  - `kubechat-api-gateway`
+  - `kubechat-nlp-service`
+  - `kubechat-audit-service`
 
-### Kubernetes Resources
-- **CRD names**: lowercase with hyphens (`chat-session.yaml`)
-- **ConfigMaps/Secrets**: descriptive, project-prefixed (`kubechat-config`)
-- **Service names**: lowercase with hyphens (`nlp-service`)
+### Container Images (Customer Registry)
+- **Naming pattern**: `<customer-registry>/kubechat/<service>:<version>`
+- **Phase 1 Model 1 examples**:
+  - `registry.company.com/kubechat/api-gateway:v1.0.0`
+  - `localhost:5000/kubechat/nlp-service:dev` (development)
+- **Air-gap ready**: All images bundled for offline installation
 
-### Container Images
-- **Naming pattern**: `kubechat-<service>:<version>`
-- **Examples**: `kubechat-operator:v1.0.0`, `kubechat-web:v1.0.0`
+### BMAD Framework Conventions
+- **Story files**: `<epic>.<story>.story.md` (e.g., `3.1.comprehensive-user-activity-logging.story.md`)
+- **Agent files**: `<role>-<specialty>-agent.md`
+- **Always check**: `.bmad/stories/current-story.md` before development
 
-## Directory Creation Guidelines
+## Phase 1 Model 1 Development Guidelines
 
-### When Creating New Directories
-1. **Follow existing patterns**: Look at similar components for structure
-2. **Logical grouping**: Group related functionality together
-3. **Flat when possible**: Avoid deep nesting unless necessary for organization
-4. **Consistent naming**: Use the established naming conventions
+### Creating New Components
+1. **Follow BMAD method**: Update `.bmad/stories/current-story.md` progress
+2. **Full-stack Phase 1**: Backend services AND React web interface (Epic 4)
+3. **On-premises first**: Design for customer-controlled infrastructure
+4. **Air-gap ready**: No external dependencies at runtime
 
 ### Service-Specific Additions
-- Each new microservice should follow the `cmd/<service>/` pattern
-- Add corresponding Dockerfile: `Dockerfile.<service>`
-- Create service-specific directories under `pkg/` if needed
-- Update `charts/kubechat/templates/` with deployment manifests
+- Each new service follows `cmd/<service>/` pattern
+- Add Helm chart templates in `deploy/helm/kubechat/templates/`
+- Create shared utilities in appropriate `pkg/` subdirectories
+- Add integration tests in `tests/integration/`
 
-This structure supports the monorepo approach with clear separation of concerns while enabling shared code reuse across microservices.
+### Kubernetes Operator Pattern (Future)
+- **Deferred to later stories**: Not in initial Phase 1 Model 1
+- When added: will use `pkg/controllers/` for custom controllers
+- CRD definitions in `config/crd/bases/`
+
+## Phase 1 Model 1 Architecture Principles
+
+### Data Sovereignty
+- **Customer infrastructure**: All code runs in customer Kubernetes clusters
+- **No vendor services**: Zero dependencies on external vendor APIs
+- **Configuration management**: Environment variables and ConfigMaps only
+
+### Air-Gap Capability
+- **Offline bundles**: Complete installation packages with all dependencies
+- **Local registries**: Container images stored in customer registries
+- **No internet required**: Post-installation operation without external connectivity
+
+### Helm-Native Deployment
+- **Primary deployment method**: Helm charts for customer installation
+- **Single command**: `helm install kubechat ./deploy/helm/kubechat`
+- **Customer customization**: Comprehensive `values.yaml` configuration
+
+This structure supports **Phase 1: Model 1 (On-Premises FREE Platform)** with complete focus on customer data sovereignty and air-gap deployment capability.

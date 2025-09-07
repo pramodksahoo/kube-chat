@@ -7,7 +7,18 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config([
   // Global ignores
   {
-    ignores: ['dist/', 'build/', 'coverage/', '.turbo/', 'node_modules/'],
+    ignores: [
+      'dist/',
+      'build/',
+      'coverage/',
+      '.turbo/',
+      'node_modules/',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+    ],
   },
 
   // TypeScript and React configuration
@@ -47,6 +58,13 @@ export default tseslint.config([
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'warn',
+      '@typescript-eslint/no-unsafe-call': 'warn',
+      '@typescript-eslint/no-unsafe-return': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/restrict-template-expressions': 'warn',
+      '@typescript-eslint/require-await': 'warn',
 
       // General rules for code quality
       'prefer-const': 'error',

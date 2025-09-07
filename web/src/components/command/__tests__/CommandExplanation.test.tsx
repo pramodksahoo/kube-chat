@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import CommandExplanation from '../CommandExplanation';
 import type { KubectlCommandPart } from '../CommandExplanation';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations } as any);
 
 const mockParts: KubectlCommandPart[] = [
   {
@@ -170,8 +170,7 @@ describe('CommandExplanation', () => {
         // The tooltip appears at the bottom of the component with specific styling
         expect(screen.getByText('The main kubectl command-line tool for Kubernetes')).toBeInTheDocument();
         // Check for tooltip container with blue background
-        const tooltipSection = screen.getByTestId ? 
-          screen.queryByTestId('tooltip-section') :
+        const tooltipSection = screen.queryByTestId('tooltip-section') || 
           document.querySelector('.border-t.border-gray-200.bg-blue-50');
         if (tooltipSection) {
           expect(tooltipSection).toBeInTheDocument();
