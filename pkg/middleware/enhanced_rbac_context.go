@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
-	authv1 "k8s.io/api/authorization/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -219,8 +218,12 @@ func (ctx *EnhancedRBACContext) EvaluatePermissionWithContext(reqCtx context.Con
 	// Step 2: Perform basic permission validation
 	var allowed bool
 	var basicError error
+	var permissionResponse *PermissionResponse
 	ctx.addEvaluationStep(evaluationContext, "basic_validation", "Performing basic RBAC validation", func() (bool, error) {
-		allowed, basicError = ctx.validator.ValidatePermission(reqCtx, request)
+		permissionResponse, basicError = ctx.validator.ValidatePermission(reqCtx, *request)
+		if permissionResponse != nil {
+			allowed = permissionResponse.Allowed
+		}
 		return allowed, basicError
 	})
 
@@ -312,7 +315,7 @@ func (ctx *EnhancedRBACContext) AnalyzePermissionFailure(reqCtx context.Context,
 			if len(gap.Recommendations.KubectlCommands) > 0 {
 				adminGuidance := &models.AdminGuidance{
 					RoleBindingCommands:     gap.Recommendations.KubectlCommands,
-					SecurityConsiderations: gap.Recommendations.SecurityConsiderations,
+					SecurityConsiderations: strings.Join(gap.Recommendations.SecurityConsiderations, "; "),
 				}
 				errorBuilder.WithAdminGuidance(adminGuidance)
 			}
@@ -809,8 +812,8 @@ func (ctx *EnhancedRBACContext) generateTroubleshootingSteps(request *Permission
 		Title:       "Verify user permissions",
 		Description: "Check what permissions the user currently has",
 		Commands: []string{
-			fmt.Sprintf("kubectl auth can-i %s %s --as=%s", request.Verb, request.Resource, request.UserContext.KubernetesUser),
-			fmt.Sprintf("kubectl auth can-i --list --as=%s", request.UserContext.KubernetesUser),
+			fmt.Sprintf("kubectl auth can-i %s %s --as=%s", request.Verb, request.Resource, request.KubernetesUser),
+			fmt.Sprintf("kubectl auth can-i --list --as=%s", request.KubernetesUser),
 		},
 		ExpectedResult: "Should show current permissions and identify missing ones",
 		NextSteps:      []string{"If user has no permissions, check role bindings"},

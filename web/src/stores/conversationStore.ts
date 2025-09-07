@@ -155,10 +155,11 @@ export const useConversationStore = create<ConversationStore>()(
           );
         }
 
-        if (filter.dateRange) {
+        if (filter.dateRange && filter.dateRange.from && filter.dateRange.to) {
           filteredConversations = filteredConversations.filter(conv => {
             const convDate = conv.createdAt;
-            return convDate >= filter.dateRange!.from && convDate <= filter.dateRange!.to;
+            return filter.dateRange && filter.dateRange.from && filter.dateRange.to && 
+                   convDate >= filter.dateRange.from && convDate <= filter.dateRange.to;
           });
         }
 
@@ -312,12 +313,13 @@ export const useConversationStore = create<ConversationStore>()(
           if (!item) return null;
           
           try {
-            return JSON.parse(item, (_key, value: unknown) => {
+            const parsed = JSON.parse(item, (_key, value: unknown) => {
               if (value && typeof value === 'object' && (value as {__type?: string; value?: string}).__type === 'Date') {
                 return new Date((value as {value: string}).value);
               }
               return value;
-            }) as unknown;
+            });
+            return parsed;
           } catch {
             return null;
           }

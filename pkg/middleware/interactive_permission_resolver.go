@@ -10,8 +10,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
-	authv1 "k8s.io/api/authorization/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/pramodksahoo/kube-chat/pkg/models"
@@ -82,7 +80,7 @@ type ResolutionStep struct {
 	SystemOutput    map[string]interface{} `json:"system_output,omitempty"`
 	Options         []StepOption           `json:"options,omitempty"`
 	RequiredInput   []InputRequirement     `json:"required_input,omitempty"`
-	Validation      *StepValidation        `json:"validation,omitempty"`
+	Validation      *models.StepValidation        `json:"validation,omitempty"`
 	ExecutedAt      *time.Time             `json:"executed_at,omitempty"`
 	Duration        time.Duration          `json:"duration,omitempty"`
 	Error           string                 `json:"error,omitempty"`
@@ -161,7 +159,7 @@ type PermissionTestResult struct {
 // ApprovalInfo contains information about approval requirements and status
 type ApprovalInfo struct {
 	Required       bool                   `json:"required"`
-	Approvers      []ApprovalRequirement  `json:"approvers"`
+	Approvers      []models.ApprovalRequirement  `json:"approvers"`
 	Status         ApprovalStatus         `json:"status"`
 	SubmittedAt    *time.Time             `json:"submitted_at,omitempty"`
 	ApprovedAt     *time.Time             `json:"approved_at,omitempty"`
@@ -239,11 +237,13 @@ func (r *InteractivePermissionResolver) StartInteractiveResolution(ctx context.C
 
 	// Log session creation
 	if r.auditLogger != nil {
-		r.auditLogger.LogAuthEvent(ctx, map[string]interface{}{
-			"event":      "interactive_resolution_started",
-			"session_id": sessionID,
-			"user_id":    userClaims.UserID,
-			"error_id":   permError.ID,
+		r.auditLogger.LogAuthEvent(ctx, &AuthAuditEntry{
+			EventType:     AuthEventPermissionDenied, // Using closest event type
+			EventTime:     time.Now(),
+			Success:       true,
+			UserID:        userClaims.UserID,
+			SessionID:     sessionID,
+			FailureReason: "interactive_resolution_started",
 		})
 	}
 
@@ -426,7 +426,14 @@ func (r *InteractivePermissionResolver) CreateEscalationRequest(ctx context.Cont
 
 	// Log escalation
 	if r.auditLogger != nil {
-		r.auditLogger.LogAuthEvent(ctx, escalationInfo)
+		r.auditLogger.LogAuthEvent(ctx, &AuthAuditEntry{
+			EventType:     AuthEventPermissionDenied, // Using closest event type
+			EventTime:     time.Now(),
+			Success:       true,
+			UserID:        session.UserContext.UserID,
+			SessionID:     sessionID,
+			FailureReason: "permission_escalation_requested",
+		})
 	}
 
 	return r.saveSession(ctx, session)
@@ -647,9 +654,13 @@ func (r *InteractivePermissionResolver) executeVerificationStep(ctx context.Cont
 	allowed := false
 	if r.rbacContext != nil && r.rbacContext.validator != nil {
 		var err error
-		allowed, err = r.rbacContext.validator.ValidatePermission(ctx, request)
+		var permissionResponse *PermissionResponse
+		permissionResponse, err = r.rbacContext.validator.ValidatePermission(ctx, *request)
 		if err != nil {
 			return fmt.Errorf("verification failed: %w", err)
+		}
+		if permissionResponse != nil {
+			allowed = permissionResponse.Allowed
 		}
 	}
 

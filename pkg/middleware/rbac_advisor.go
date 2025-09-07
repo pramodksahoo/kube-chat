@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	authv1 "k8s.io/api/authorization/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -304,8 +303,8 @@ func (advisor *RBACAdvisor) identifyMissingPermissions(ctx context.Context, user
 			APIGroup:         permission.APIGroup,
 		}
 
-		allowed, err := advisor.validator.ValidatePermission(ctx, request)
-		if err != nil || !allowed {
+		permissionResponse, err := advisor.validator.ValidatePermission(ctx, *request)
+		if err != nil || permissionResponse == nil || !permissionResponse.Allowed {
 			missing = append(missing, permission)
 		}
 	}
@@ -754,7 +753,7 @@ func (advisor *RBACAdvisor) getCachedGap(ctx context.Context, userContext *JWTCl
 		return nil, false
 	}
 	
-	key := advisor.generateCacheKey(userContext, permissions)
+	_ = advisor.generateCacheKey(userContext, permissions)
 	// Implementation would retrieve from Redis cache
 	return nil, false // Placeholder
 }

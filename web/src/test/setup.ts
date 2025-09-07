@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom';
+import { afterAll, beforeAll, vi } from 'vitest';
+import 'jest-axe/extend-expect';
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {

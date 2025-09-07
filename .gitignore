@@ -121,3 +121,4 @@ sandbox/
 *-local.yaml
 *-local.yml
 config/local/
+node_modules

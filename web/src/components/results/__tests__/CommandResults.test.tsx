@@ -4,7 +4,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import CommandResults from '../CommandResults';
 import type { CommandOutput } from '../CommandResults';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations } as any);
 
 const mockTableOutput = `NAME                READY   STATUS    RESTARTS   AGE
 nginx-deployment    1/1     Running   0          10m

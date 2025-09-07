@@ -20,7 +20,10 @@ class MockWebSocket {
   onerror: ((event: Event) => void) | null = null;
   onclose: ((event: CloseEvent) => void) | null = null;
 
-  constructor(public url: string) {
+  public url: string;
+  
+  constructor(url: string) {
+    this.url = url;
     // Simulate async connection
     setTimeout(() => {
       this.readyState = MockWebSocket.OPEN;
@@ -30,7 +33,7 @@ class MockWebSocket {
     }, 0);
   }
 
-  send(data: string) {
+  send(_data: string) {
     // Mock implementation
   }
 

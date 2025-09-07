@@ -4,7 +4,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import CommandExecutionStatus from '../CommandExecutionStatus';
 import type { ExecutionStep } from '../CommandExecutionStatus';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations } as any);
 
 const mockSteps: ExecutionStep[] = [
   {

@@ -335,10 +335,7 @@ func (t *translatorService) extractResourceDetails(kubectlCommand string, sessio
 		resourceName = parts[3]
 	}
 
-	// Use default namespace from session context if not specified
-	if namespace == "" && sessionContext != nil && sessionContext.Namespace != "" {
-		namespace = sessionContext.Namespace
-	}
+	// SessionContext doesn't have namespace field - will be handled by user context later
 
 	// Default to "default" namespace if still not specified
 	if namespace == "" {

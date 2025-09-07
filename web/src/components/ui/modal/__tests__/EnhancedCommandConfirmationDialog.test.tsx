@@ -4,7 +4,7 @@ import { axe, toHaveNoViolations } from 'jest-axe';
 import EnhancedCommandConfirmationDialog from '../EnhancedCommandConfirmationDialog';
 import type { KubernetesResource, PermissionCheck } from '../EnhancedCommandConfirmationDialog';
 
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations } as any);
 
 const mockResources: KubernetesResource[] = [
   {
