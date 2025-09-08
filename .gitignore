@@ -32,6 +32,17 @@ go.work
 /build/
 web/build/
 web/dist/
+cmd/api-gateway/main
+
+/api-gateway
+/audit-service
+/nlp-service
+/main
+/build/
+/dist/
+/bin/
+cmd/*/main
+!cmd/*/main.go
 
 # Vendor directory
 /vendor/
