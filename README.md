@@ -65,9 +65,16 @@ KubeChat eliminates this false choice by providing:
 ## 🚀 Quick Start
 
 ### Prerequisites
+<<<<<<< HEAD
 - Kubernetes cluster (1.24+)
 - Helm 3.x
 - kubectl access to your cluster
+=======
+
+- Go 1.22+
+- Node.js 18+ and pnpm (for web frontend)
+- Basic understanding of kubectl commands
+>>>>>>> refs/remotes/origin/develop
 
 ### Installation
 
@@ -77,6 +84,7 @@ helm repo add kubechat https://charts.kubechat.dev
 helm repo update
 ```
 
+<<<<<<< HEAD
 2. **Install KubeChat**:
 ```bash
 # Basic installation
@@ -87,11 +95,29 @@ helm install kubechat kubechat/kubechat -f values.yaml
 ```
 
 3. **Access the web interface**:
+=======
+2. **Set up the web frontend**:
+```bash
+cd web
+pnpm install
+# Start development server (ALWAYS runs on port 3001)
+pnpm dev
+```
+
+3. **Run tests to verify**:
+```bash
+go test ./... -v
+cd web && pnpm test
+```
+
+4. **Start the NLP service**:
+>>>>>>> refs/remotes/origin/develop
 ```bash
 kubectl port-forward svc/kubechat-web 8080:80
 # Navigate to http://localhost:8080
 ```
 
+<<<<<<< HEAD
 ### First Commands
 Try these natural language commands:
 - `"show me all pods"`
@@ -102,6 +128,17 @@ Try these natural language commands:
 ## 🏗️ Architecture
 
 KubeChat operates as a cloud-native microservices architecture:
+=======
+### 🚨 Web Application Port Configuration
+
+**The web application ALWAYS runs on port 3001**
+
+- **Frontend URL**: `http://localhost:3001`
+- **Do NOT use port 3000** - Configured with `strictPort: true`
+- **Team members**: Bookmark `http://localhost:3001`
+
+## API Endpoints
+>>>>>>> refs/remotes/origin/develop
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
