@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 	// Create Fiber app for testing
 	app := fiber.New()
 	app.Use(security.RateLimitMiddleware())
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "success"})
 	})
 
@@ -105,7 +105,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			
 			testApp := fiber.New()
 			testApp.Use(testSecurity.RateLimitMiddleware())
-			testApp.Get("/test", func(c fiber.Ctx) error {
+			testApp.Get("/test", func(c *fiber.Ctx) error {
 				return c.JSON(fiber.Map{"message": "success"})
 			})
 			
@@ -142,10 +142,10 @@ func TestBruteForceProtectionMiddleware(t *testing.T) {
 	// Create Fiber app for testing
 	app := fiber.New()
 	app.Use(security.BruteForceProtectionMiddleware())
-	app.Post("/auth/callback", func(c fiber.Ctx) error {
+	app.Post("/auth/callback", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "auth callback"})
 	})
-	app.Get("/other", func(c fiber.Ctx) error {
+	app.Get("/other", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "other endpoint"})
 	})
 
@@ -301,7 +301,7 @@ func TestTokenRotationMiddleware(t *testing.T) {
 	
 	app := fiber.New()
 	app.Use(security.TokenRotationMiddleware())
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "success"})
 	})
 
@@ -645,7 +645,7 @@ func TestSecurityMiddlewareIntegration(t *testing.T) {
 	
 	// Add rate limiting middleware
 	app.Use("/api/*", security.RateLimitMiddleware())
-	app.Get("/api/test", func(c fiber.Ctx) error {
+	app.Get("/api/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "success"})
 	})
 	
@@ -672,7 +672,7 @@ func TestSecurityMiddlewareIntegration(t *testing.T) {
 	app2 := fiber.New()
 	// Add brute force protection middleware
 	app2.Use("/login", security.BruteForceProtectionMiddleware())
-	app2.Post("/login", func(c fiber.Ctx) error {
+	app2.Post("/login", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "login endpoint"})
 	})
 	

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"golang.org/x/oauth2"
 	
 	"github.com/pramodksahoo/kube-chat/pkg/config"
@@ -135,7 +135,7 @@ func (m *AuthMiddleware) initializeProvider(settings OIDCProvider) (*ProviderCon
 
 // RequireAuthentication middleware that requires valid authentication
 func (m *AuthMiddleware) RequireAuthentication() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Check for JWT token in Authorization header
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -201,7 +201,7 @@ func (m *AuthMiddleware) GetAuthURL(providerName string, state string) (string, 
 }
 
 // HandleCallback processes the OIDC callback
-func (m *AuthMiddleware) HandleCallback(c fiber.Ctx) error {
+func (m *AuthMiddleware) HandleCallback(c *fiber.Ctx) error {
 	// Get provider from query parameter or path
 	providerName := c.Query("provider")
 	if providerName == "" {
@@ -370,7 +370,7 @@ func (m *AuthMiddleware) HandleCallback(c fiber.Ctx) error {
 
 // ListProviders returns available authentication providers
 func (m *AuthMiddleware) ListProviders() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		providers := make([]fiber.Map, 0, len(m.providers))
 		for name, config := range m.providers {
 			providers = append(providers, fiber.Map{
@@ -397,7 +397,7 @@ func (m *AuthMiddleware) GetProviders() []string {
 
 
 // sendAuthenticationError sends a standardized authentication error response
-func (m *AuthMiddleware) sendAuthenticationError(c fiber.Ctx, code, message string, statusCode int) error {
+func (m *AuthMiddleware) sendAuthenticationError(c *fiber.Ctx, code, message string, statusCode int) error {
 	// Log the error (structured logging would be used in production)
 	fmt.Printf("Authentication error: %s - %s\n", code, message)
 
@@ -634,7 +634,7 @@ func (m *AuthMiddleware) extractMFAMethodFromProvider(claims map[string]interfac
 }
 
 // initiateMFAChallenge initiates an MFA challenge when required
-func (m *AuthMiddleware) initiateMFAChallenge(c fiber.Ctx, claims *JWTClaims, requiredMethods []MFAMethod, providerName string) error {
+func (m *AuthMiddleware) initiateMFAChallenge(c *fiber.Ctx, claims *JWTClaims, requiredMethods []MFAMethod, providerName string) error {
 	// Store partial authentication state for MFA completion
 	partialAuthData := map[string]interface{}{
 		"user_id":            claims.UserID,

@@ -1,0 +1,95 @@
+{{- if .Values.nlpService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubechat.fullname" . }}-nlp-service
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nlp-service
+spec:
+  replicas: {{ .Values.nlpService.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubechat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nlp-service
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kubechat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nlp-service
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubechat.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.nlpService.securityContext | nindent 8 }}
+      containers:
+      - name: nlp-service
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.nlpService.image.repository }}:{{ .Values.nlpService.image.tag | default .Values.global.imageTag }}"
+        imagePullPolicy: {{ .Values.nlpService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8084
+          protocol: TCP
+        env:
+        - name: PORT
+          value: {{ .Values.nlpService.env.PORT | default "8084" | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.nlpService.env.LOG_LEVEL | default "info" | quote }}
+        - name: NLP_PROVIDER
+          value: {{ .Values.nlpService.env.NLP_PROVIDER | default "ollama" | quote }}
+        - name: OLLAMA_HOST
+          value: {{ .Values.nlpService.env.OLLAMA_HOST | default "http://localhost:11434" | quote }}
+        - name: OLLAMA_MODEL
+          value: {{ .Values.nlpService.env.OLLAMA_MODEL | default "llama2" | quote }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "kubechat.fullname" . }}-nlp
+              key: openai-api-key
+              optional: true
+        - name: OPENAI_MODEL
+          value: {{ .Values.nlpService.env.OPENAI_MODEL | default "gpt-3.5-turbo" | quote }}
+        - name: MAX_TOKENS
+          value: {{ .Values.nlpService.env.MAX_TOKENS | default "1000" | quote }}
+        - name: TEMPERATURE
+          value: {{ .Values.nlpService.env.TEMPERATURE | default "0.7" | quote }}
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if .Values.nlpService.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.nlpService.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.nlpService.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.nlpService.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.nlpService.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.nlpService.securityContext | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,4 +1,5 @@
 import type { AuthenticationState, OIDCProvider, SAMLProvider } from '../types/auth';
+import API_CONFIG from '@/config/api';
 
 export class AuthenticationService {
   private static instance: AuthenticationService;
@@ -22,7 +23,7 @@ export class AuthenticationService {
     }
 
     try {
-      const response = await fetch('/api/v1/auth/csrf', {
+      const response = await fetch(`${API_CONFIG.AUTH}/csrf`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -56,7 +57,7 @@ export class AuthenticationService {
   public async initiateOIDCLogin(provider: OIDCProvider): Promise<string> {
     try {
       const headers = await this.createAuthHeaders();
-      const response = await fetch('/api/v1/auth/oidc/login', {
+      const response = await fetch(`${API_CONFIG.AUTH}/oidc/login`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -85,7 +86,7 @@ export class AuthenticationService {
   public async handleOIDCCallback(code: string, state: string): Promise<AuthenticationState> {
     try {
       const headers = await this.createAuthHeaders();
-      const response = await fetch('/api/v1/auth/oidc/callback', {
+      const response = await fetch(`${API_CONFIG.AUTH}/oidc/callback`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -121,7 +122,7 @@ export class AuthenticationService {
   public async initiateSAMLSSO(provider: SAMLProvider): Promise<string> {
     try {
       const headers = await this.createAuthHeaders();
-      const response = await fetch('/api/v1/auth/saml/sso', {
+      const response = await fetch(`${API_CONFIG.AUTH}/saml/sso`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -149,7 +150,7 @@ export class AuthenticationService {
   public async handleSAMLAssertion(samlResponse: string): Promise<AuthenticationState> {
     try {
       const headers = await this.createAuthHeaders();
-      const response = await fetch('/api/v1/auth/saml/acs', {
+      const response = await fetch(`${API_CONFIG.AUTH}/saml/acs`, {
         method: 'POST',
         credentials: 'include',
         headers,
@@ -183,7 +184,7 @@ export class AuthenticationService {
    */
   public async getSessionStatus(): Promise<AuthenticationState | null> {
     try {
-      const response = await fetch('/api/v1/auth/session', {
+      const response = await fetch(`${API_CONFIG.AUTH}/session`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -217,7 +218,7 @@ export class AuthenticationService {
    */
   public async refreshToken(): Promise<AuthenticationState> {
     try {
-      const response = await fetch('/api/v1/auth/refresh', {
+      const response = await fetch(`${API_CONFIG.AUTH}/refresh`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -248,7 +249,7 @@ export class AuthenticationService {
   public async logout(): Promise<void> {
     try {
       const headers = await this.createAuthHeaders();
-      const response = await fetch('/api/v1/auth/logout', {
+      const response = await fetch(`${API_CONFIG.AUTH}/logout`, {
         method: 'POST',
         credentials: 'include',
         headers,

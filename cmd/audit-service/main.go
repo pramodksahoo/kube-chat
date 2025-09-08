@@ -52,7 +52,7 @@ func DefaultConfig() Config {
 	}
 	
 	return Config{
-		Port:              getEnv("AUDIT_PORT", "8080"),
+		Port:              getEnv("AUDIT_PORT", "8081"),
 		DatabaseURL:       databaseURL,
 		RetentionDays:     getEnvInt("AUDIT_RETENTION_DAYS", 365*7), // 7 years default
 		WorkerCount:       getEnvInt("AUDIT_WORKER_COUNT", 4),
@@ -208,6 +208,9 @@ func (s *AuditService) setupRoutes() {
 	// Health check endpoint
 	s.app.Get(s.config.HealthCheckPath, s.healthCheckHandler)
 
+	// Ready endpoint
+	s.app.Get("/ready", s.readinessHandler)
+
 	// Metrics endpoint
 	s.app.Get(s.config.MetricsPath, s.metricsHandler)
 
@@ -324,6 +327,14 @@ func (s *AuditService) healthCheckHandler(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"status": "healthy",
+		"service": "audit-service",
+		"version": "1.0.0",
+	})
+}
+
+func (s *AuditService) readinessHandler(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"status": "ready",
 		"service": "audit-service",
 		"version": "1.0.0",
 	})

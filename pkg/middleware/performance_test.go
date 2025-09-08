@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -122,7 +122,7 @@ func BenchmarkAuthenticationMiddleware(b *testing.B) {
 	// Create Fiber app
 	app := fiber.New()
 	app.Use(authMiddleware.RequireAuthentication())
-	app.Get("/protected", func(c fiber.Ctx) error {
+	app.Get("/protected", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "authorized"})
 	})
 
@@ -183,7 +183,7 @@ func BenchmarkSecurityMiddleware(b *testing.B) {
 
 	app := fiber.New()
 	app.Use(security.RateLimitMiddleware())
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "success"})
 	})
 

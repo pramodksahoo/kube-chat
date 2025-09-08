@@ -158,7 +158,7 @@ auditService:
   service:
     type: ClusterIP
     port: 80
-    targetPort: 8082
+    targetPort: 8081
     annotations: {}
   
   # Resource limits and requests
@@ -173,22 +173,87 @@ auditService:
   # Environment variables
   env:
     LOG_LEVEL: "info"
-    PORT: "8082"
+    PORT: "8081"
     AUDIT_RETENTION_DAYS: "90"
   
   # Probes configuration
   livenessProbe:
     httpGet:
       path: /health
-      port: 8082
+      port: 8081
     initialDelaySeconds: 30
     periodSeconds: 10
     
   readinessProbe:
     httpGet:
       path: /ready
-      port: 8082
+      port: 8081
     initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    capabilities:
+      drop:
+        - ALL
+
+# NLP Service Configuration
+nlpService:
+  # Enable NLP service deployment
+  enabled: true
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Container image configuration
+  image:
+    repository: "kubechat/nlp-service"
+    tag: "" # Uses global.imageTag if empty
+    pullPolicy: Always
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8084
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  
+  # Environment variables
+  env:
+    LOG_LEVEL: "info"
+    PORT: "8084"
+    ENABLE_AUDIT: "true"
+    # NLP Provider Configuration
+    NLP_PROVIDER: "ollama"  # Options: "ollama" (default), "openai"
+    OLLAMA_BASE_URL: "http://ollama:11434"  # Default Ollama endpoint
+    OLLAMA_MODEL: "llama2"  # Default Ollama model
+    OPENAI_API_KEY: ""  # Optional: Set via secret for OpenAI provider
+  
+  # Probes configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8084
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8084
+    initialDelaySeconds: 10
     periodSeconds: 5
   
   # Security context
@@ -218,7 +283,7 @@ web:
   service:
     type: ClusterIP
     port: 80
-    targetPort: 3000
+    targetPort: 8083
     annotations: {}
   
   # Resource limits and requests

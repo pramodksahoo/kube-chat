@@ -15,7 +15,7 @@ import (
 
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 )
 
 // SAMLConfig holds configuration for SAML authentication
@@ -166,7 +166,7 @@ func NewSAMLProvider(config SAMLConfig, jwtService JWTServiceInterface, mfaHandl
 
 // GetMetadata returns the SAML service provider metadata
 func (sp *SAMLProvider) GetMetadata() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Generate mock metadata for testing
 		metadata := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <EntityDescriptor entityID="%s" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
@@ -210,7 +210,7 @@ func (sp *SAMLProvider) GetAuthURL(relayState string) (string, error) {
 
 // HandleAssertion processes SAML assertion and creates JWT token
 func (sp *SAMLProvider) HandleAssertion() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// This is a simplified version - in production, you'd need to properly
 		// integrate with the samlsp middleware and handle the full SAML flow
 		
@@ -420,7 +420,7 @@ func (sp *SAMLProvider) extractMFAFromSAMLAssertion(assertion *SAMLAssertion) bo
 
 // HandleSingleLogout processes SAML single logout requests
 func (sp *SAMLProvider) HandleSingleLogout() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Extract logout request/response
 		logoutRequest := c.FormValue("SAMLRequest")
 		logoutResponse := c.FormValue("SAMLResponse")
@@ -444,7 +444,7 @@ func (sp *SAMLProvider) HandleSingleLogout() fiber.Handler {
 
 // CreateFallbackHandler creates a handler that attempts OIDC first, falls back to SAML
 func CreateFallbackHandler(authMiddleware *AuthMiddleware, samlProvider *SAMLProvider) fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Check if OIDC providers are available and working
 		providerName := c.Query("provider")
 		
@@ -544,7 +544,7 @@ func (sp *SAMLProvider) GenerateMetadata() (string, error) {
 
 // Helper functions
 
-func (sp *SAMLProvider) sendSAMLError(c fiber.Ctx, code, message string, statusCode int) error {
+func (sp *SAMLProvider) sendSAMLError(c *fiber.Ctx, code, message string, statusCode int) error {
 	// Log the error
 	fmt.Printf("SAML error: %s - %s\n", code, message)
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/pramodksahoo/kube-chat/pkg/models"
 )
 
@@ -38,13 +38,13 @@ type AuditConfig struct {
 	MaxBodySize int64
 	
 	// UserContextExtractor extracts user context from the request
-	UserContextExtractor func(c fiber.Ctx) (*models.User, *models.SessionAuthContext, error)
+	UserContextExtractor func(c *fiber.Ctx) (*models.User, *models.SessionAuthContext, error)
 	
 	// CorrelationIDExtractor extracts correlation ID from request
-	CorrelationIDExtractor func(c fiber.Ctx) string
+	CorrelationIDExtractor func(c *fiber.Ctx) string
 	
 	// TraceIDExtractor extracts trace ID from request
-	TraceIDExtractor func(c fiber.Ctx) string
+	TraceIDExtractor func(c *fiber.Ctx) string
 }
 
 // EventCollectorInterface defines the interface for audit event collection
@@ -75,7 +75,7 @@ func NewAuditMiddleware(config AuditConfig) fiber.Handler {
 		log.Println("Warning: Audit middleware configured without collector - events will be ignored")
 	}
 	
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Skip audit for certain paths and methods
 		if shouldSkipAudit(c, config) {
 			return c.Next()
@@ -129,7 +129,7 @@ type ResponseInfo struct {
 }
 
 // shouldSkipAudit determines if the request should be skipped for auditing
-func shouldSkipAudit(c fiber.Ctx, config AuditConfig) bool {
+func shouldSkipAudit(c *fiber.Ctx, config AuditConfig) bool {
 	// Skip configured paths
 	path := c.Path()
 	for _, skipPath := range config.SkipPaths {
@@ -150,7 +150,7 @@ func shouldSkipAudit(c fiber.Ctx, config AuditConfig) bool {
 }
 
 // captureRequestInfo captures relevant request information for auditing
-func captureRequestInfo(c fiber.Ctx, config AuditConfig) *RequestInfo {
+func captureRequestInfo(c *fiber.Ctx, config AuditConfig) *RequestInfo {
 	info := &RequestInfo{
 		Method:      c.Method(),
 		URL:         c.OriginalURL(),
@@ -192,7 +192,7 @@ func captureRequestInfo(c fiber.Ctx, config AuditConfig) *RequestInfo {
 }
 
 // captureResponseInfo captures relevant response information for auditing
-func captureResponseInfo(c fiber.Ctx, config AuditConfig) *ResponseInfo {
+func captureResponseInfo(c *fiber.Ctx, config AuditConfig) *ResponseInfo {
 	info := &ResponseInfo{
 		StatusCode: c.Response().StatusCode(),
 		Headers:    make(map[string]string),
@@ -220,7 +220,7 @@ func captureResponseInfo(c fiber.Ctx, config AuditConfig) *ResponseInfo {
 }
 
 // createAuditEvent creates an audit event from the request/response information
-func createAuditEvent(c fiber.Ctx, config AuditConfig, reqInfo *RequestInfo, respInfo *ResponseInfo, startTime time.Time, duration time.Duration, err error) *models.AuditEvent {
+func createAuditEvent(c *fiber.Ctx, config AuditConfig, reqInfo *RequestInfo, respInfo *ResponseInfo, startTime time.Time, duration time.Duration, err error) *models.AuditEvent {
 	// Extract user context
 	_, sessionCtx, userErr := config.UserContextExtractor(c)
 	if userErr != nil {
@@ -352,7 +352,7 @@ func getErrorString(err error) string {
 
 // Default extractor functions
 
-func defaultUserContextExtractor(c fiber.Ctx) (*models.User, *models.SessionAuthContext, error) {
+func defaultUserContextExtractor(c *fiber.Ctx) (*models.User, *models.SessionAuthContext, error) {
 	// Extract user information from headers/context
 	userID := c.Get("X-User-ID")
 	sessionID := c.Get("X-Session-ID")
@@ -378,7 +378,7 @@ func defaultUserContextExtractor(c fiber.Ctx) (*models.User, *models.SessionAuth
 	return user, sessionCtx, nil
 }
 
-func defaultCorrelationIDExtractor(c fiber.Ctx) string {
+func defaultCorrelationIDExtractor(c *fiber.Ctx) string {
 	// Check multiple possible header names
 	correlationID := c.Get("X-Correlation-ID")
 	if correlationID == "" {
@@ -390,7 +390,7 @@ func defaultCorrelationIDExtractor(c fiber.Ctx) string {
 	return correlationID
 }
 
-func defaultTraceIDExtractor(c fiber.Ctx) string {
+func defaultTraceIDExtractor(c *fiber.Ctx) string {
 	// Check multiple possible header names
 	traceID := c.Get("X-Trace-ID")
 	if traceID == "" {
@@ -404,7 +404,7 @@ func defaultTraceIDExtractor(c fiber.Ctx) string {
 
 // SessionLifecycleAuditMiddleware provides middleware for session lifecycle events
 func SessionLifecycleAuditMiddleware(collector EventCollectorInterface, serviceName, serviceVersion string) fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Check for session events in the request context
 		if sessionEvent := c.Locals("session_event"); sessionEvent != nil {
 			sendSessionAuditEvent(collector, c, sessionEvent.(string), serviceName, serviceVersion)
@@ -415,7 +415,7 @@ func SessionLifecycleAuditMiddleware(collector EventCollectorInterface, serviceN
 }
 
 // sendSessionAuditEvent sends session lifecycle audit events
-func sendSessionAuditEvent(collector EventCollectorInterface, c fiber.Ctx, eventType, serviceName, serviceVersion string) {
+func sendSessionAuditEvent(collector EventCollectorInterface, c *fiber.Ctx, eventType, serviceName, serviceVersion string) {
 	if collector == nil {
 		return
 	}

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,7 +67,7 @@ type mockAuthMiddleware struct {
 }
 
 func (m *mockAuthMiddleware) RequireAuthentication() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Simple mock authentication check
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -290,7 +290,7 @@ func TestRequireAuthentication(t *testing.T) {
 			// Create Fiber app for testing
 			app := fiber.New()
 			app.Use(mockAuth.RequireAuthentication())
-			app.Get("/protected", func(c fiber.Ctx) error {
+			app.Get("/protected", func(c *fiber.Ctx) error {
 				return c.JSON(fiber.Map{"message": "success"})
 			})
 			
@@ -609,7 +609,7 @@ func TestExtractAuthContext(t *testing.T) {
 	// Create Fiber app for testing
 	app := fiber.New()
 	app.Use(authMiddleware.RequireAuthentication())
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		// Test context extraction
 		user := c.Locals("user")
 		userID := c.Locals("user_id")
@@ -968,7 +968,7 @@ func TestSendAuthenticationError(t *testing.T) {
 	middleware := &AuthMiddleware{}
 
 	app := fiber.New()
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		return middleware.sendAuthenticationError(c, "TEST_ERROR", "Test error message", 401)
 	})
 
@@ -1174,7 +1174,7 @@ func TestAuthenticationContextExtraction(t *testing.T) {
 	
 	// Add auth middleware and a test endpoint
 	app.Use(auth.RequireAuthentication())
-	app.Get("/protected", func(c fiber.Ctx) error {
+	app.Get("/protected", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "protected"})
 	})
 	

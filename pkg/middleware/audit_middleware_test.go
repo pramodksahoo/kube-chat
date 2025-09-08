@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -63,10 +63,10 @@ func TestAuditMiddlewareSkipPaths(t *testing.T) {
 	
 	app := fiber.New()
 	app.Use(NewAuditMiddleware(config))
-	app.Get("/health", func(c fiber.Ctx) error {
+	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
-	app.Get("/api/test", func(c fiber.Ctx) error {
+	app.Get("/api/test", func(c *fiber.Ctx) error {
 		return c.SendString("Test")
 	})
 	
@@ -98,10 +98,10 @@ func TestAuditMiddlewareSkipMethods(t *testing.T) {
 	
 	app := fiber.New()
 	app.Use(NewAuditMiddleware(config))
-	app.Options("/api/test", func(c fiber.Ctx) error {
+	app.Options("/api/test", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
-	app.Get("/api/test", func(c fiber.Ctx) error {
+	app.Get("/api/test", func(c *fiber.Ctx) error {
 		return c.SendString("Test")
 	})
 	
@@ -139,7 +139,7 @@ func TestAuditMiddlewareRequestCapture(t *testing.T) {
 	
 	app := fiber.New()
 	app.Use(NewAuditMiddleware(config))
-	app.Post("/api/test", func(c fiber.Ctx) error {
+	app.Post("/api/test", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"result": "success"})
 	})
 	
@@ -312,7 +312,7 @@ func TestDetermineSeverity(t *testing.T) {
 
 func TestCaptureRequestInfo(t *testing.T) {
 	app := fiber.New()
-	app.Post("/api/test", func(c fiber.Ctx) error {
+	app.Post("/api/test", func(c *fiber.Ctx) error {
 		config := DefaultAuditConfig()
 		config.LogRequestBody = true
 		config.MaxBodySize = 1024
@@ -342,7 +342,7 @@ func TestCaptureRequestInfo(t *testing.T) {
 
 func TestCaptureResponseInfo(t *testing.T) {
 	app := fiber.New()
-	app.Get("/api/test", func(c fiber.Ctx) error {
+	app.Get("/api/test", func(c *fiber.Ctx) error {
 		config := DefaultAuditConfig()
 		config.LogResponseBody = true
 		config.MaxBodySize = 1024
@@ -368,7 +368,7 @@ func TestCaptureResponseInfo(t *testing.T) {
 
 func TestDefaultUserContextExtractor(t *testing.T) {
 	app := fiber.New()
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		user, sessionCtx, err := defaultUserContextExtractor(c)
 		
 		if c.Get("X-User-ID") == "" {
@@ -404,7 +404,7 @@ func TestDefaultUserContextExtractor(t *testing.T) {
 
 func TestDefaultCorrelationIDExtractor(t *testing.T) {
 	app := fiber.New()
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		correlationID := defaultCorrelationIDExtractor(c)
 		
 		if c.Get("X-Correlation-ID") != "" {
@@ -446,7 +446,7 @@ func TestSessionLifecycleAuditMiddleware(t *testing.T) {
 	
 	app := fiber.New()
 	app.Use(SessionLifecycleAuditMiddleware(mockCollector, "test-service", "1.0.0"))
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		c.Locals("session_event", "session_created")
 		return c.SendString("OK")
 	})
@@ -480,12 +480,12 @@ func TestShouldSkipAudit(t *testing.T) {
 	// Create test routes to validate skip logic
 	testResults := make(map[string]bool)
 	
-	app.Get("/health", func(c fiber.Ctx) error {
+	app.Get("/health", func(c *fiber.Ctx) error {
 		testResults["health"] = shouldSkipAudit(c, config)
 		return c.SendString("ok")
 	})
 	
-	app.All("/api/*", func(c fiber.Ctx) error {
+	app.All("/api/*", func(c *fiber.Ctx) error {
 		testResults[c.Method()+":"+c.Path()] = shouldSkipAudit(c, config)
 		return c.SendString("ok")
 	})
@@ -531,7 +531,7 @@ func BenchmarkAuditMiddleware(b *testing.B) {
 	
 	app := fiber.New()
 	app.Use(NewAuditMiddleware(config))
-	app.Get("/api/test", func(c fiber.Ctx) error {
+	app.Get("/api/test", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
 	

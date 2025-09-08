@@ -1,0 +1,34 @@
+{{- if and .Values.ollama.enabled .Values.ollama.modelInitialization.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubechat.fullname" . }}-ollama-models
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+data:
+  init-models.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Starting model initialization for Ollama..."
+    
+    # Wait for Ollama to be ready
+    while ! curl -s http://localhost:11434/api/version > /dev/null; do
+      echo "Waiting for Ollama to be ready..."
+      sleep 5
+    done
+    
+    echo "Ollama is ready, pulling models..."
+    
+    # Pull the configured model
+    echo "Pulling model: {{ .Values.ollama.modelInitialization.model | default "llama3.2" }}"
+    ollama pull {{ .Values.ollama.modelInitialization.model | default "llama3.2" }}
+    
+    {{- range .Values.ollama.modelInitialization.additionalModels }}
+    echo "Pulling additional model: {{ . }}"
+    ollama pull {{ . }}
+    {{- end }}
+    
+    echo "Model initialization completed successfully!"
+{{- end }}

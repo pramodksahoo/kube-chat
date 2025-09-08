@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/pramodksahoo/kube-chat/pkg/nlp"
 	"github.com/stretchr/testify/assert"
 )
