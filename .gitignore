@@ -6,6 +6,13 @@
 *.so
 *.dylib
 
+# Go compiled binaries (main executable names)
+/main
+/operator
+/webapi
+kubechat-operator
+kube-chat
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -13,6 +20,8 @@
 *.out
 cover.out
 coverage.out
+*_coverage.out
+coverage.html
 
 # Go workspace file
 go.work
@@ -20,6 +29,9 @@ go.work
 # Build artifacts
 /bin/
 /dist/
+/build/
+web/build/
+web/dist/
 
 # Vendor directory
 /vendor/
@@ -119,4 +131,15 @@ sandbox/
 *-local.yaml
 *-local.yml
 config/local/
-node_modules
+# Node.js / npm / pnpm
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Node.js build outputs
+web/build/
+web/dist/
+*.tsbuildinfo
