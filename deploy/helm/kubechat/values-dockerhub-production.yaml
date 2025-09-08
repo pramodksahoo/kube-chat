@@ -1,0 +1,189 @@
+# KubeChat Helm Chart - Docker Hub Production Configuration
+# Production deployment using Docker Hub registry (kubechat/kubechat)
+
+# Global configuration for Docker Hub production deployment
+global:
+  # Docker Hub registry configuration
+  imageRegistry: "docker.io"
+  imageTag: "v1.0.0"
+  imagePullSecrets:
+    - name: "dockerhub-registry-secret"
+  
+  # Production environment settings
+  environment: "production"
+  debug: false
+  logLevel: "info"
+  
+  # Production namespace - Standard practice for production
+  namespace: "kubechat"
+
+# Deployment configuration - Production
+deployment:
+  mode: "production"
+  airgap: false
+  replicaCount: 3  # High availability
+
+# Resource configuration - Production grade
+resources:
+  production: true
+  
+  # API Gateway resources - Production scale
+  apiGateway:
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+  
+  # Kubernetes Operator resources - Production scale
+  operator:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  
+  # Audit Service resources - Production scale
+  auditService:
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+  
+  # Web Frontend resources - Production scale
+  web:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+
+# API Gateway configuration - Docker Hub
+apiGateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: "kubechat/kubechat"
+    tag: "api-gateway-v1.0.0"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "ClusterIP"
+    port: 8080
+  
+  # Production configuration
+  config:
+    corsEnabled: true
+    corsOrigins: ["https://kubechat.company.com"]
+    rateLimitEnabled: true
+    rateLimitRpm: 1000
+    metricsEnabled: true
+    healthCheckEnabled: true
+
+# Kubernetes Operator configuration - Docker Hub
+operator:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: "kubechat/kubechat"
+    tag: "operator-v1.0.0"
+    pullPolicy: "IfNotPresent"
+  
+  rbac:
+    create: true
+    clusterWide: true
+  
+  webhook:
+    enabled: true
+    port: 9443
+
+# Audit Service configuration - Docker Hub
+auditService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: "kubechat/kubechat"
+    tag: "audit-service-v1.0.0"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "ClusterIP"
+    port: 8082
+
+# Web Frontend configuration - Docker Hub
+web:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: "kubechat/kubechat"
+    tag: "web-v1.0.0"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "ClusterIP"
+    port: 80
+  
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: "kubechat.company.com"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+    tls:
+      - secretName: "kubechat-tls-prod"
+        hosts:
+          - "kubechat.company.com"
+
+# PostgreSQL configuration - Production HA
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        existingSecret: "kubechat-postgresql-secret"
+        username: "kubechat_user"
+        database: "kubechat_audit_prod"
+  
+  architecture: "replication"
+  primary:
+    persistence:
+      enabled: true
+      size: "100Gi"
+
+# Redis configuration - Production HA
+redis:
+  enabled: true
+  architecture: "replication"
+  master:
+    persistence:
+      enabled: true
+      size: "10Gi"
+
+# Security configuration - Production grade
+security:
+  podSecurityPolicy:
+    enabled: true
+  networkPolicy:
+    enabled: true
+  rbac:
+    create: true
+
+# Monitoring configuration - Production
+monitoring:
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+
+# External services configuration
+externalServices:
+  enabled: true

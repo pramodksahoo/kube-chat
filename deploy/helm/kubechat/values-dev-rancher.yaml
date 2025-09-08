@@ -1,0 +1,307 @@
+# KubeChat Helm Chart - Rancher Desktop Development Configuration
+# Optimized for local development on Rancher Desktop with minimal resources
+
+# Global configuration for all services
+global:
+  # Local registry for Rancher Desktop
+  imageRegistry: "localhost:5001"
+  imageTag: "dev"
+  imagePullSecrets: []
+  
+  # Development environment settings
+  environment: "development"
+  debug: true
+  logLevel: "debug"
+  
+  # Namespace configuration
+  namespace: "kubechat-dev"
+
+# Deployment configuration
+deployment:
+  mode: "on-premises"
+  airgap: false
+  replicaCount: 1  # Single replica for development
+  
+# Resource configuration - Minimal for development
+resources:
+  minimal: true
+  
+  # API Gateway resources
+  apiGateway:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+  
+  # Kubernetes Operator resources  
+  operator:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+  
+  # Audit Service resources
+  auditService:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+  
+  # Web Frontend resources
+  web:
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+
+# API Gateway configuration
+apiGateway:
+  enabled: true
+  image:
+    repository: "kubechat/api-gateway"
+    tag: "dev"
+    pullPolicy: "Always"  # Always pull for development
+  
+  service:
+    type: "ClusterIP"
+    port: 8080
+  
+  # Development-specific configuration
+  config:
+    corsEnabled: true
+    corsOrigins: ["http://localhost:3000", "http://localhost:5173"]
+    rateLimitEnabled: false  # Disable for development
+    metricsEnabled: true
+    healthCheckEnabled: true
+
+# Kubernetes Operator configuration
+operator:
+  enabled: true
+  image:
+    repository: "kubechat/operator"
+    tag: "dev"
+    pullPolicy: "Always"
+  
+  service:
+    type: "ClusterIP"
+    port: 8082
+  
+  # RBAC configuration
+  rbac:
+    create: true
+    clusterWide: false  # Namespace-scoped for development
+  
+  # Webhook configuration
+  webhook:
+    enabled: false  # Disable webhooks for development simplicity
+    
+  # Metrics and monitoring  
+  metrics:
+    enabled: true
+    port: 8082
+  
+  # Environment variables
+  env:
+    HEALTH_CHECK_PORT: 8082
+
+# Audit Service configuration
+auditService:
+  enabled: true
+  image:
+    repository: "kubechat/audit-service"
+    tag: "dev"
+    pullPolicy: "Always"
+  
+  service:
+    type: "ClusterIP"
+    port: 8081
+  
+  # Development database configuration
+  database:
+    type: "postgresql"
+    host: "postgres-postgresql"
+    port: 5432
+    name: "kubechat_audit_dev"
+    username: "kubechat_user"
+    # Password will be set via secret
+  
+  # Audit configuration
+  config:
+    retentionDays: 7  # Short retention for development
+    batchSize: 100
+    flushInterval: "10s"
+  
+  # Environment variables
+  env:
+    PORT: 8081
+
+# Web Frontend configuration
+web:
+  enabled: true
+  image:
+    repository: "kubechat/web"
+    tag: "dev"
+    pullPolicy: "Always"
+  
+  service:
+    type: "ClusterIP"
+    port: 8083
+    targetPort: 8083
+  
+  # Development ingress
+  ingress:
+    enabled: true
+    className: "traefik"  # Rancher Desktop default
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "web"
+    hosts:
+      - host: "kubechat.local"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+    tls: []  # No TLS for development
+
+# PostgreSQL configuration (using bitnami chart)
+postgresql:
+  enabled: false
+  external:
+    host: "postgres-postgresql"
+    port: 5432
+    database: "kubechat_audit"
+    username: "postgres"
+    password: "dev-password"
+  global:
+    postgresql:
+      auth:
+        postgresPassword: "dev-postgres-password"
+        username: "kubechat_user"
+        password: "dev-kubechat-password"
+        database: "kubechat_audit_dev"
+  
+  # Development resource limits
+  primary:
+    resources:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+    
+    persistence:
+      enabled: true
+      size: "1Gi"  # Small volume for development
+      
+# Redis configuration (using bitnami chart)
+redis:
+  enabled: false
+  external:
+    host: "redis-master"
+    port: 6379
+    password: "dev-password"
+  global:
+    redis:
+      password: "dev-redis-password"
+  
+  # Development resource limits
+  master:
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+    
+    persistence:
+      enabled: false  # No persistence needed for development
+  
+  # Disable replica for development
+  replica:
+    replicaCount: 0
+
+# Security configuration - Relaxed for development
+security:
+  podSecurityPolicy:
+    enabled: false
+  
+  networkPolicy:
+    enabled: false
+  
+  rbac:
+    create: true
+
+# Development-specific features
+development:
+  # Enable debug endpoints
+  debugEndpoints: true
+  
+  # Enable hot reload (if supported)
+  hotReload: true
+  
+  # Enable development tools
+  profiling: true
+  
+  # Mock external services
+  mockServices:
+    enabled: true
+    
+# Monitoring and observability
+monitoring:
+  # Enable basic monitoring for development
+  prometheus:
+    enabled: true
+    scrapeInterval: "30s"
+  
+  # Disable complex monitoring for development
+  jaeger:
+    enabled: false
+  
+  grafana:
+    enabled: false
+
+# Backup configuration - Disabled for development
+backup:
+  enabled: false
+
+# External services configuration
+externalServices:
+  # Enable external services for development testing
+  enabled: true
+  
+  # LLM service configuration (for NLP features)
+  llm:
+    provider: "ollama"  # Use local Ollama for development
+    endpoint: "http://host.docker.internal:11434"
+    model: "llama3.2"
+
+# Development utilities
+devUtils:
+  # Enable kubectl debug utilities
+  debugPod:
+    enabled: true
+    image: "nicolaka/netshoot:latest"
+  
+  # Enable database utilities
+  dbUtils:
+    enabled: true
+    image: "postgres:15-alpine"
+
+# Testing configuration
+testing:
+  # Enable test fixtures
+  fixtures:
+    enabled: true
+    
+  # Test data configuration
+  testData:
+    enabled: true
+    generateSample: true

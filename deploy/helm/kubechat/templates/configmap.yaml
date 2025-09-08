@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubechat.fullname" . }}-config
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+data:
+  # Application configuration
+  LOG_LEVEL: {{ .Values.global.logLevel | quote }}
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  DEBUG: {{ .Values.global.debug | quote }}
+  
+  # Service URLs
+  API_GATEWAY_URL: {{ printf "http://%s-api-gateway" (include "kubechat.fullname" .) | quote }}
+  AUDIT_SERVICE_URL: {{ printf "http://%s-audit-service" (include "kubechat.fullname" .) | quote }}

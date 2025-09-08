@@ -1,6 +1,8 @@
 module github.com/pramodksahoo/kube-chat
 
-go 1.25.0
+go 1.25
+
+toolchain go1.25.1
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

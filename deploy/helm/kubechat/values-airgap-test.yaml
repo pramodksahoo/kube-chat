@@ -1,0 +1,432 @@
+# KubeChat Helm Chart - Air-Gap Testing Configuration
+# Complete offline deployment configuration with no external dependencies
+
+# Global configuration for air-gap testing
+global:
+  # Local registry for air-gap deployment
+  imageRegistry: "localhost:5000"
+  imageTag: "airgap"
+  imagePullSecrets: []
+  
+  # Air-gap environment settings
+  environment: "airgap-test"
+  debug: true
+  logLevel: "info"
+  
+  # Namespace configuration
+  namespace: "kubechat-airgap"
+
+# Deployment configuration - Air-gap specific
+deployment:
+  mode: "on-premises"
+  airgap: true
+  offlineMode: true
+  replicaCount: 1  # Single replica for testing
+  
+  # Air-gap validation
+  validateAirgap: true
+  blockExternalAccess: true
+
+# Resource configuration - Testing optimized
+resources:
+  testing: true
+  
+  # API Gateway resources
+  apiGateway:
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
+    requests:
+      cpu: "150m"
+      memory: "256Mi"
+  
+  # Kubernetes Operator resources  
+  operator:
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
+    requests:
+      cpu: "150m"
+      memory: "256Mi"
+  
+  # Audit Service resources
+  auditService:
+    limits:
+      cpu: "300m"
+      memory: "512Mi"
+    requests:
+      cpu: "150m"
+      memory: "256Mi"
+  
+  # Web Frontend resources
+  web:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+
+# API Gateway configuration - Air-gap specific
+apiGateway:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/api-gateway"
+    tag: "airgap"
+    pullPolicy: "Never"  # Never pull - use local images only
+  
+  service:
+    type: "ClusterIP"
+    port: 8080
+  
+  # Air-gap configuration
+  config:
+    corsEnabled: true
+    corsOrigins: ["https://kubechat.airgap"]
+    rateLimitEnabled: true
+    metricsEnabled: true
+    healthCheckEnabled: true
+    
+    # Disable external connections
+    externalConnections: false
+    dnsResolution: false
+    internetAccess: false
+
+# Kubernetes Operator configuration - Air-gap specific
+operator:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/operator"
+    tag: "airgap"
+    pullPolicy: "Never"
+  
+  # RBAC configuration for air-gap
+  rbac:
+    create: true
+    clusterWide: false
+  
+  # Disable webhooks that might need external access
+  webhook:
+    enabled: false
+    
+  # Metrics configuration
+  metrics:
+    enabled: true
+    port: 8080
+  
+  # Air-gap operator configuration
+  config:
+    offlineMode: true
+    disableUpdateChecks: true
+    localResourcesOnly: true
+
+# Audit Service configuration - Air-gap specific
+auditService:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/audit-service"
+    tag: "airgap"
+    pullPolicy: "Never"
+  
+  service:
+    type: "ClusterIP"
+    port: 8082
+  
+  # Air-gap database configuration
+  database:
+    type: "postgresql"
+    host: "kubechat-postgresql"
+    port: 5432
+    name: "kubechat_audit_airgap"
+    username: "kubechat_user"
+    # Password will be set via secret
+  
+  # Audit configuration for air-gap
+  config:
+    retentionDays: 30
+    batchSize: 500
+    flushInterval: "5s"
+    
+    # Tamper-proof configuration
+    tamperProof: true
+    checksumValidation: true
+    auditChain: true
+    
+    # Disable external audit forwarding
+    externalForwarding: false
+    siemIntegration: false
+
+# Web Frontend configuration - Air-gap specific
+web:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/web"
+    tag: "airgap"
+    pullPolicy: "Never"
+  
+  service:
+    type: "ClusterIP"
+    port: 80
+  
+  # Air-gap ingress configuration
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: "websecure"
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    hosts:
+      - host: "kubechat.airgap"
+        paths:
+          - path: "/"
+            pathType: "Prefix"
+    tls:
+      - secretName: "kubechat-tls-airgap"
+        hosts:
+          - "kubechat.airgap"
+
+# PostgreSQL configuration - Air-gap specific
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        postgresPassword: "airgap-postgres-password"
+        username: "kubechat_user"
+        password: "airgap-kubechat-password"
+        database: "kubechat_audit_airgap"
+  
+  # Air-gap resource configuration
+  primary:
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+    
+    persistence:
+      enabled: true
+      size: "5Gi"
+      
+    # Air-gap specific configuration
+    extraEnvVars:
+      - name: "POSTGRES_INITDB_ARGS"
+        value: "--locale=C --encoding=UTF8"
+      
+# Redis configuration - Air-gap specific
+redis:
+  enabled: true
+  global:
+    redis:
+      password: "airgap-redis-password"
+  
+  # Air-gap resource configuration
+  master:
+    resources:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+    
+    persistence:
+      enabled: true
+      size: "1Gi"
+  
+  # Disable replica for air-gap testing
+  replica:
+    replicaCount: 0
+
+# Security configuration - Enhanced for air-gap
+security:
+  podSecurityPolicy:
+    enabled: true
+  
+  networkPolicy:
+    enabled: true
+    blockExternal: true
+    allowedNamespaces: ["kubechat-airgap"]
+  
+  rbac:
+    create: true
+    strict: true
+  
+  # Air-gap specific security
+  airgapSecurity:
+    enabled: true
+    blockDNS: true
+    blockInternet: true
+    allowOnlyLocal: true
+
+# Air-gap testing features
+airgapTesting:
+  # Enable air-gap validation
+  validation:
+    enabled: true
+    strictMode: true
+    failOnExternalAccess: true
+  
+  # Network isolation testing
+  networkIsolation:
+    enabled: true
+    testConnectivity: true
+    
+  # Image availability testing
+  imageValidation:
+    enabled: true
+    verifyLocalImages: true
+    checkImageSources: false
+  
+  # Service dependency testing
+  dependencyTesting:
+    enabled: true
+    validateOfflineServices: true
+
+# Monitoring configuration - Air-gap specific
+monitoring:
+  # Enable local monitoring only
+  prometheus:
+    enabled: true
+    scrapeInterval: "15s"
+    externalLabels: {}
+    
+    # Disable remote write for air-gap
+    remoteWrite:
+      enabled: false
+  
+  # Disable external monitoring
+  jaeger:
+    enabled: false
+  
+  grafana:
+    enabled: false
+
+# Backup configuration - Local only
+backup:
+  enabled: true
+  type: "local"
+  schedule: "0 2 * * *"
+  retention: "7d"
+  
+  # Air-gap backup configuration
+  airgap:
+    enabled: true
+    localPath: "/backup"
+    encryption: true
+
+# External services configuration - All disabled for air-gap
+externalServices:
+  enabled: false
+  
+  # LLM service - Use local only
+  llm:
+    provider: "local"
+    endpoint: "http://kubechat-llm:8000"
+    model: "local-model"
+  
+  # Disable all external integrations
+  siem:
+    enabled: false
+  
+  alerting:
+    enabled: false
+  
+  telemetry:
+    enabled: false
+
+# Air-gap utilities and tools
+airgapUtils:
+  # Enable air-gap diagnostic tools
+  diagnostics:
+    enabled: true
+    image: "localhost:5000/kubechat/diagnostics:airgap"
+  
+  # Network testing utilities
+  networkTest:
+    enabled: true
+    image: "localhost:5000/kubechat/nettest:airgap"
+  
+  # Certificate management
+  certificates:
+    enabled: true
+    selfSigned: true
+    duration: "8760h"  # 1 year
+
+# Testing configuration - Air-gap specific
+testing:
+  # Air-gap test suite
+  airgapTests:
+    enabled: true
+    
+    # Network isolation tests
+    networkTests:
+      enabled: true
+      testExternalBlocking: true
+      testInternalConnectivity: true
+    
+    # Service availability tests
+    serviceTests:
+      enabled: true
+      testAllServices: true
+      testDependencies: true
+    
+    # Data integrity tests
+    integrityTests:
+      enabled: true
+      testAuditChain: true
+      testTamperProof: true
+    
+    # Performance tests
+    performanceTests:
+      enabled: true
+      testLoadHandling: true
+      testResourceUsage: true
+
+# Air-gap specific environment variables
+env:
+  # Deployment environment
+  DEPLOYMENT_MODE: "airgap"
+  OFFLINE_MODE: "true"
+  
+  # Network configuration
+  DISABLE_EXTERNAL_DNS: "true"
+  BLOCK_INTERNET_ACCESS: "true"
+  LOCAL_REGISTRY_ONLY: "true"
+  
+  # Security configuration
+  STRICT_SECURITY_MODE: "true"
+  TAMPER_PROOF_AUDIT: "true"
+  
+  # Testing configuration
+  AIRGAP_TESTING: "true"
+  VALIDATE_AIR_GAP: "true"
+
+# Image pull configuration for air-gap
+imagePullSecrets: []
+imagePullPolicy: "Never"  # Global override - never pull from external registries
+
+# Air-gap deployment validation
+validation:
+  enabled: true
+  preInstall: true
+  postInstall: true
+  
+  checks:
+    - name: "image-availability"
+      description: "Verify all images are available locally"
+      enabled: true
+    
+    - name: "network-isolation"
+      description: "Verify no external network access"
+      enabled: true
+    
+    - name: "dependency-satisfaction"
+      description: "Verify all dependencies are met locally"
+      enabled: true
+    
+    - name: "service-health"
+      description: "Verify all services start successfully"
+      enabled: true

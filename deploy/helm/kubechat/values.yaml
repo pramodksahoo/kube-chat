@@ -1,0 +1,421 @@
+# KubeChat Phase 1 Model 1 Default Values
+# This is a YAML-formatted file for default configuration values
+# Declare variables to be passed into templates
+
+# Global configuration
+global:
+  # Container image registry
+  imageRegistry: "localhost:5000"
+  
+  # Image pull secrets (for private registries)
+  imagePullSecrets: []
+  # - name: regcred
+  
+  # Common image tag
+  imageTag: "dev"
+  
+  # Storage class for persistent volumes
+  storageClass: ""
+  
+  # Namespace override
+  namespaceOverride: ""
+
+# Deployment mode configuration
+deployment:
+  # Deployment mode: on-premises, cloud, hybrid
+  mode: "on-premises"
+  
+  # Air-gap deployment mode
+  airgap: false
+  
+  # Offline mode (no external dependencies)
+  offlineMode: false
+  
+  # External services disabled for air-gap
+  externalServices: true
+
+# API Gateway Service Configuration
+apiGateway:
+  # Enable API Gateway deployment
+  enabled: true
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Container image configuration
+  image:
+    repository: "kubechat/api-gateway"
+    tag: "" # Uses global.imageTag if empty
+    pullPolicy: Always
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # Environment variables
+  env:
+    LOG_LEVEL: "info"
+    PORT: "8080"
+  
+  # Probes configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    capabilities:
+      drop:
+        - ALL
+
+# Kubernetes Operator Configuration
+operator:
+  # Enable operator deployment
+  enabled: true
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Container image configuration
+  image:
+    repository: "kubechat/operator"
+    tag: "" # Uses global.imageTag if empty
+    pullPolicy: Always
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  # Environment variables
+  env:
+    LOG_LEVEL: "info"
+    ENABLE_WEBHOOKS: "true"
+  
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    capabilities:
+      drop:
+        - ALL
+  
+  # RBAC configuration
+  rbac:
+    create: true
+    
+  # Service account
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+# Audit Service Configuration
+auditService:
+  # Enable audit service deployment
+  enabled: true
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Container image configuration
+  image:
+    repository: "kubechat/audit-service"
+    tag: "" # Uses global.imageTag if empty
+    pullPolicy: Always
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8082
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # Environment variables
+  env:
+    LOG_LEVEL: "info"
+    PORT: "8082"
+    AUDIT_RETENTION_DAYS: "90"
+  
+  # Probes configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8082
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8082
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    capabilities:
+      drop:
+        - ALL
+
+# Web Frontend Configuration
+web:
+  # Enable web frontend deployment
+  enabled: true
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Container image configuration
+  image:
+    repository: "kubechat/web"
+    tag: "" # Uses global.imageTag if empty
+    pullPolicy: Always
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+    annotations: {}
+  
+  # Resource limits and requests
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    capabilities:
+      drop:
+        - ALL
+
+# PostgreSQL Configuration
+postgresql:
+  # Enable PostgreSQL deployment (disable to use external)
+  enabled: true
+  
+  # Use internal PostgreSQL (managed by this chart)
+  internal: true
+  
+  # External PostgreSQL configuration (when internal: false)
+  external:
+    enabled: false
+    host: "postgres-postgresql.kubechat-system.svc.cluster.local"
+    port: 5432
+    database: "kubechat_dev"
+    username: "postgres"
+    password: "dev-password"
+  
+  # PostgreSQL authentication
+  auth:
+    postgresPassword: "dev-password"
+    database: "kubechat_dev"
+  
+  # Primary configuration
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    service:
+      type: ClusterIP
+
+# Redis Configuration  
+redis:
+  # Enable Redis deployment (disable to use external)
+  enabled: true
+  
+  # Use internal Redis (managed by this chart)
+  internal: true
+  
+  # External Redis configuration (when internal: false)
+  external:
+    enabled: false
+    host: "redis-master.kubechat-system.svc.cluster.local" 
+    port: 6379
+    password: "dev-password"
+  
+  # Redis authentication
+  auth:
+    password: "dev-password"
+  
+  # Master configuration
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    service:
+      type: ClusterIP
+
+# Authentication Configuration
+auth:
+  # OIDC authentication
+  oidc:
+    enabled: false
+    issuer: ""
+    clientId: ""
+    clientSecret: ""
+    redirectUri: ""
+    scopes: ["openid", "profile", "email"]
+  
+  # SAML authentication
+  saml:
+    enabled: false
+    metadataUrl: ""
+    certificate: ""
+    privateKey: ""
+  
+  # JWT configuration
+  jwt:
+    secret: "dev-jwt-secret-change-in-production"
+    expiration: "24h"
+
+# Ingress Configuration
+ingress:
+  # Enable ingress
+  enabled: false
+  
+  # Ingress class name
+  className: "nginx"
+  
+  # Ingress annotations
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  
+  # Ingress hosts
+  hosts:
+    - host: kubechat.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: kubechat-api-gateway
+            port: 80
+  
+  # TLS configuration
+  tls: []
+  # - secretName: kubechat-tls
+  #   hosts:
+  #     - kubechat.local
+
+# Monitoring Configuration
+monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: false
+    serviceMonitor:
+      enabled: false
+      namespace: ""
+      labels: {}
+  
+  # Grafana dashboards
+  grafana:
+    enabled: false
+    dashboards:
+      enabled: false
+
+# Security Configuration
+security:
+  # Pod Security Standards
+  podSecurityStandards:
+    enforce: "restricted"
+  
+  # Network Policies
+  networkPolicy:
+    enabled: false
+    ingress: []
+    egress: []
+  
+  # RBAC
+  rbac:
+    create: true
+
+# Node selector for all pods
+nodeSelector: {}
+
+# Tolerations for all pods
+tolerations: []
+
+# Affinity for all pods
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Service account configuration
+serviceAccount:
+  # Create service account
+  create: true
+  
+  # Annotations for service account
+  annotations: {}
+  
+  # Service account name (auto-generated if empty)
+  name: ""

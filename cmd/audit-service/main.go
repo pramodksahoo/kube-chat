@@ -39,9 +39,21 @@ type Config struct {
 
 // DefaultConfig returns default configuration
 func DefaultConfig() Config {
+	// Try to get DATABASE_URL first, if not available, construct from individual components
+	databaseURL := getEnv("DATABASE_URL", "")
+	if databaseURL == "" {
+		// Construct DATABASE_URL from individual environment variables
+		host := getEnv("DATABASE_HOST", "postgres-postgresql")
+		port := getEnv("DATABASE_PORT", "5432")
+		dbname := getEnv("DATABASE_NAME", "kubechat_audit")
+		user := getEnv("DATABASE_USER", "postgres")
+		password := getEnv("DATABASE_PASSWORD", "password")
+		databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
+	}
+	
 	return Config{
 		Port:              getEnv("AUDIT_PORT", "8080"),
-		DatabaseURL:       getEnv("DATABASE_URL", "postgres://user:password@localhost/kubechat_audit?sslmode=disable"),
+		DatabaseURL:       databaseURL,
 		RetentionDays:     getEnvInt("AUDIT_RETENTION_DAYS", 365*7), // 7 years default
 		WorkerCount:       getEnvInt("AUDIT_WORKER_COUNT", 4),
 		BufferSize:        getEnvInt("AUDIT_BUFFER_SIZE", 10000),

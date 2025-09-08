@@ -17,7 +17,7 @@ KubeChat provides advanced Natural Language Processing capabilities that allow y
 Create a ChatSession resource and start sending natural language messages:
 
 ```yaml
-apiVersion: kubechat.io/v1
+apiVersion: kubechat.dev/v1
 kind: ChatSession
 metadata:
   name: my-chat
@@ -478,7 +478,7 @@ KubeChat can be integrated with CI/CD pipelines for automated deployments:
 
 ```yaml
 # Example GitOps workflow
-apiVersion: kubechat.io/v1
+apiVersion: kubechat.dev/v1
 kind: ChatSession
 metadata:
   name: cicd-deployment
