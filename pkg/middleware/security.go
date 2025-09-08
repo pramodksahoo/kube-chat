@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -123,7 +123,7 @@ func NewSecurityMiddleware(config SecurityConfig, jwtService JWTServiceInterface
 
 // RateLimitMiddleware returns a Fiber middleware for rate limiting
 func (s *SecurityMiddleware) RateLimitMiddleware() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		clientIP := c.IP()
 		allowed, resetTime, err := s.rateLimiter.IsAllowed(clientIP)
 		if err != nil {
@@ -151,7 +151,7 @@ func (s *SecurityMiddleware) RateLimitMiddleware() fiber.Handler {
 
 // BruteForceProtectionMiddleware returns a Fiber middleware for brute force protection
 func (s *SecurityMiddleware) BruteForceProtectionMiddleware() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Check if this is an authentication endpoint
 		if c.Path() == "/auth/callback" || c.Path() == "/auth/login" {
 			clientIP := c.IP()
@@ -181,7 +181,7 @@ func (s *SecurityMiddleware) BruteForceProtectionMiddleware() fiber.Handler {
 
 // TokenRotationMiddleware adds token rotation headers
 func (s *SecurityMiddleware) TokenRotationMiddleware() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Add token rotation information to response headers
 		if s.config.TokenRotationEnabled {
 			c.Set("X-Token-Rotation-Enabled", "true")

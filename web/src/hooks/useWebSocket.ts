@@ -7,7 +7,7 @@ import type {
 } from '@/types/websocket';
 
 const DEFAULT_CONFIG: WebSocketConfig = {
-  url: `${typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${typeof window !== 'undefined' ? window.location.host : 'localhost'}/api/v1/chat`,
+  url: `${typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${typeof window !== 'undefined' ? window.location.host : 'localhost'}/ws/chat`,
   reconnectAttempts: 5,
   reconnectInterval: 3000,
   heartbeatInterval: 30000,

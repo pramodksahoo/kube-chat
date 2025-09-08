@@ -20,8 +20,6 @@ go.work
 # Build artifacts
 /bin/
 /dist/
-kube-chat
-nlp-service
 
 # Vendor directory
 /vendor/

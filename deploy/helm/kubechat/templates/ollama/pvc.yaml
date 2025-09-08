@@ -1,0 +1,24 @@
+{{- if and .Values.ollama.enabled .Values.ollama.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kubechat.fullname" . }}-ollama-data
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  accessModes:
+    {{- range .Values.ollama.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size | quote }}
+  {{- if .Values.ollama.persistence.storageClass }}
+  {{- if (eq "-" .Values.ollama.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.ollama.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

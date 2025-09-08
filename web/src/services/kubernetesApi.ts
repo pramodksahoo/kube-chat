@@ -315,8 +315,10 @@ export class ResourceChangeDetector {
 }
 
 // Factory functions for creating instances
+import API_CONFIG from '@/config/api';
+
 export function createKubernetesApiClient(baseUrl?: string, token?: string): KubernetesApiClient {
-  return new KubernetesApiClient(baseUrl, token);
+  return new KubernetesApiClient(baseUrl || API_CONFIG.KUBERNETES, token);
 }
 
 export function createResourceChangeDetector(): ResourceChangeDetector {

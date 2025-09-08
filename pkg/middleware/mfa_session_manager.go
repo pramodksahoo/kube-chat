@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 )
 
 // MFASessionManager handles MFA session state and step-up authentication
@@ -97,7 +97,7 @@ func NewMFASessionManager(redisClient *redis.Client, jwtService JWTServiceInterf
 
 // RequiresMFAMiddleware is a middleware that checks if an operation requires MFA
 func (m *MFASessionManager) RequiresMFAMiddleware(operation string) fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Get user from context
 		userClaims := c.Locals("user").(*JWTClaims)
 		if userClaims == nil {
@@ -289,7 +289,7 @@ func (m *MFASessionManager) InvalidateMFAForSessions(ctx context.Context, userID
 }
 
 // initiateMFAStepUp initiates MFA step-up authentication for an operation
-func (m *MFASessionManager) initiateMFAStepUp(c fiber.Ctx, claims *JWTClaims, config MFAOperationConfig) error {
+func (m *MFASessionManager) initiateMFAStepUp(c *fiber.Ctx, claims *JWTClaims, config MFAOperationConfig) error {
 	// Store step-up requirement
 	err := m.SetMFAStepUpRequirement(context.Background(), claims.SessionID, true, config.Operation)
 	if err != nil {
@@ -367,7 +367,7 @@ func (m *MFASessionManager) CompleteMFAStepUp(ctx context.Context, sessionID, op
 
 // GetMFAOperationRequirements returns MFA requirements for all operations
 func (m *MFASessionManager) GetMFAOperationRequirements() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		operations := make([]fiber.Map, 0, len(DefaultMFAOperations))
 		
 		for _, config := range DefaultMFAOperations {
@@ -390,7 +390,7 @@ func (m *MFASessionManager) GetMFAOperationRequirements() fiber.Handler {
 
 // GetSessionMFAStatus returns current MFA status for the user's session
 func (m *MFASessionManager) GetSessionMFAStatus() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Get user from context
 		userClaims := c.Locals("user").(*JWTClaims)
 		if userClaims == nil {
@@ -453,7 +453,7 @@ func (m *MFASessionManager) GetSessionMFAStatus() fiber.Handler {
 
 // InvalidateSessionMFA invalidates MFA for the current session
 func (m *MFASessionManager) InvalidateSessionMFA() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		// Get user from context
 		userClaims := c.Locals("user").(*JWTClaims)
 		if userClaims == nil {

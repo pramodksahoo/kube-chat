@@ -1,6 +1,6 @@
 #!/bin/bash
 # Export KubeChat images for air-gap distribution
-# Generated: 2025-09-07 15:09:19 UTC
+# Generated: 2025-09-08 09:44:26 UTC
 
 set -euo pipefail
 

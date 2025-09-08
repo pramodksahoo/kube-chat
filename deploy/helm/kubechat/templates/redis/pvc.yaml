@@ -1,0 +1,24 @@
+{{- if and .Values.redis.enabled .Values.redis.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kubechat.fullname" . }}-redis-data
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+    {{- range .Values.redis.persistence.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size | quote }}
+  {{- if .Values.redis.persistence.storageClass }}
+  {{- if (eq "-" .Values.redis.persistence.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.redis.persistence.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

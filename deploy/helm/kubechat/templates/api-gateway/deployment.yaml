@@ -88,7 +88,7 @@ spec:
           {{- end }}
         - name: REDIS_HOST
           {{- if .Values.redis.enabled }}
-          value: "{{ include "kubechat.fullname" . }}-redis-master"
+          value: "{{ include "kubechat.fullname" . }}-redis"
           {{- else }}
           value: {{ .Values.redis.external.host | quote }}
           {{- end }}
@@ -100,7 +100,7 @@ spec:
           {{- end }}
         - name: REDIS_ADDR
           {{- if .Values.redis.enabled }}
-          value: "{{ include "kubechat.fullname" . }}-redis-master:6379"
+          value: "{{ include "kubechat.fullname" . }}-redis:6379"
           {{- else }}
           value: "{{ .Values.redis.external.host }}:{{ .Values.redis.external.port }}"
           {{- end }}

@@ -143,6 +143,64 @@ auditService:
   env:
     PORT: 8081
 
+# NLP Service configuration
+nlpService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: "kubechat/nlp-service"
+    tag: "dev"
+    pullPolicy: "Always"
+  
+  service:
+    type: "ClusterIP"
+    port: 8084
+  
+  # Environment variables
+  env:
+    PORT: 8084
+    LOG_LEVEL: "debug"
+    NLP_PROVIDER: "ollama"
+    OLLAMA_HOST: "http://{{ include \"kubechat.fullname\" . }}-ollama:11434"
+    OLLAMA_MODEL: "llama3.2"
+    OPENAI_MODEL: "gpt-3.5-turbo"
+    MAX_TOKENS: "1000"
+    TEMPERATURE: "0.7"
+  
+  # Resource configuration
+  resources:
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+  
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
 # Web Frontend configuration
 web:
   enabled: true
@@ -200,33 +258,49 @@ postgresql:
       enabled: true
       size: "1Gi"  # Small volume for development
       
-# Redis configuration (using bitnami chart)
+# Redis configuration (using built-in templates)
 redis:
-  enabled: false
-  external:
-    host: "redis-master"
+  enabled: true
+  replicaCount: 1
+  
+  # Image configuration
+  image:
+    repository: "redis"
+    tag: "7-alpine"
+    pullPolicy: "IfNotPresent"
+  
+  # Service configuration
+  service:
+    type: "ClusterIP"
     port: 6379
-    password: "dev-password"
-  global:
-    redis:
-      password: "dev-redis-password"
+  
+  # Authentication
+  auth:
+    password: "dev-redis-password"
   
   # Development resource limits
-  master:
-    resources:
-      limits:
-        cpu: "100m"
-        memory: "128Mi"
-      requests:
-        cpu: "50m"
-        memory: "64Mi"
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
     
-    persistence:
-      enabled: false  # No persistence needed for development
+  # Persistence configuration
+  persistence:
+    enabled: false  # No persistence needed for development
+    size: "1Gi"
+    storageClass: ""
+    accessModes:
+      - "ReadWriteOnce"
   
-  # Disable replica for development
-  replica:
-    replicaCount: 0
+  # Security context
+  securityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    runAsNonRoot: true
 
 # Security configuration - Relaxed for development
 security:
@@ -279,9 +353,98 @@ externalServices:
   
   # LLM service configuration (for NLP features)
   llm:
-    provider: "ollama"  # Use local Ollama for development
-    endpoint: "http://host.docker.internal:11434"
+    provider: "ollama"  # Use in-cluster Ollama for development
+    endpoint: "http://{{ include \"kubechat.fullname\" . }}-ollama:11434"
     model: "llama3.2"
+
+# Ollama Configuration - In-cluster LLM service
+ollama:
+  # Re-enabling Ollama with proper security configuration
+  enabled: true
+  
+  # Number of replicas (1 for development)
+  replicas: 1
+  
+  # Image configuration
+  image:
+    repository: "ollama/ollama"
+    tag: "0.1.26"
+    pullPolicy: "IfNotPresent"
+  
+  # Service configuration
+  service:
+    type: "ClusterIP"
+    port: 11434
+  
+  # Environment variables
+  env:
+    # Allow external connections to Ollama
+    OLLAMA_HOST: "0.0.0.0"
+    # Set Ollama home directory that matches mount path
+    OLLAMA_HOME: "/.ollama"
+    # Set GPU support if available
+    OLLAMA_GPU: "false"
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+  
+  # Persistent storage for models
+  persistence:
+    enabled: true
+    size: "20Gi"
+    storageClass: ""  # Use default storage class
+    accessModes:
+      - "ReadWriteOnce"
+  
+  # Model initialization configuration
+  modelInitialization:
+    enabled: true
+    model: "llama3.2"
+    # Additional models to pull on startup
+    additionalModels: []
+      # - "codellama:7b"
+      # - "mistral:7b"
+  
+  # Health checks
+  livenessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+  
+  readinessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  # Security context - Following Kubernetes best practices
+  securityContext:
+    runAsUser: 1000  # Non-root user for security
+    runAsGroup: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+  
+  # Pod security context - Following Kubernetes best practices
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  
+  # Node selector, affinity and tolerations
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
 
 # Development utilities
 devUtils:

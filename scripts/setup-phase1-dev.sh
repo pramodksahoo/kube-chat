@@ -175,17 +175,6 @@ main() {
         --set primary.service.type=ClusterIP \
         --wait --timeout=300s
     
-    # Install Redis for development  
-    log_info "📦 Installing Redis for Phase 1 Model 1 development..."
-    helm upgrade --install redis bitnami/redis \
-        --namespace kubechat-system \
-        --set auth.password=dev-password \
-        --set master.persistence.size=2Gi \
-        --set master.resources.requests.memory=128Mi \
-        --set master.resources.requests.cpu=100m \
-        --set master.service.type=ClusterIP \
-        --wait --timeout=300s
-    
     # Wait for services to be ready
     log_info "⏳ Waiting for services to be ready..."
     kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgresql -n kubechat-system --timeout=300s
@@ -198,9 +187,7 @@ main() {
     echo ""
     log_info "📋 Service Information:"
     echo "  PostgreSQL Service: postgres-postgresql.kubechat-system.svc.cluster.local:5432"
-    echo "  Redis Service: redis-master.kubechat-system.svc.cluster.local:6379"
     echo "  Local Registry: localhost:5001"
-    echo ""
     log_info "🔗 For local development access:"
     echo "  kubectl port-forward -n kubechat-system svc/postgres-postgresql 5432:5432"
     echo "  kubectl port-forward -n kubechat-system svc/redis-master 6379:6379"
@@ -232,12 +219,6 @@ DATABASE_PORT=5432
 DATABASE_NAME=kubechat_dev
 DATABASE_USER=postgres
 DATABASE_PASSWORD=dev-password
-
-# Redis Configuration
-REDIS_URL=redis://localhost:6379
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=dev-password
 
 # Authentication Configuration (Development)
 JWT_SECRET=dev-jwt-secret-change-in-production

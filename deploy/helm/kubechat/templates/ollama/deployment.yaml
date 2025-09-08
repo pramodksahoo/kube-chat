@@ -1,0 +1,70 @@
+{{- if .Values.ollama.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubechat.fullname" . }}-ollama
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ollama
+spec:
+  replicas: {{ .Values.ollama.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "kubechat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ollama
+  template:
+    metadata:
+      labels:
+        {{- include "kubechat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ollama
+    spec:
+      serviceAccountName: {{ include "kubechat.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.ollama.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ollama
+          image: "{{ .Values.ollama.image.repository }}:{{ .Values.ollama.image.tag }}"
+          imagePullPolicy: {{ .Values.ollama.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ollama.service.port | default 11434 }}
+              protocol: TCP
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:{{ .Values.ollama.service.port | default 11434 }}"
+            {{- range $key, $value := .Values.ollama.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/version
+              port: http
+            initialDelaySeconds: {{ .Values.ollama.livenessProbe.initialDelaySeconds | default 60 }}
+            periodSeconds: {{ .Values.ollama.livenessProbe.periodSeconds | default 30 }}
+            timeoutSeconds: {{ .Values.ollama.livenessProbe.timeoutSeconds | default 10 }}
+            failureThreshold: {{ .Values.ollama.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: /api/version
+              port: http
+            initialDelaySeconds: {{ .Values.ollama.readinessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.ollama.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.ollama.readinessProbe.timeoutSeconds | default 5 }}
+            failureThreshold: {{ .Values.ollama.readinessProbe.failureThreshold | default 3 }}
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /.ollama
+          securityContext:
+            {{- toYaml .Values.ollama.securityContext | nindent 12 }}
+      volumes:
+        - name: ollama-data
+          {{- if .Values.ollama.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "kubechat.fullname" . }}-ollama-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

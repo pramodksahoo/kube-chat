@@ -484,8 +484,10 @@ export class RBACService {
   }
 }
 
+import API_CONFIG from '@/config/api';
+
 // Default instance
-export const rbacService = new RBACService('/api/k8s');
+export const rbacService = new RBACService(API_CONFIG.KUBERNETES);
 
 // Permission hook context
 import { createContext, useContext } from 'react';

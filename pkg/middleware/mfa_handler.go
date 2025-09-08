@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/pquerna/otp/totp"
 )
 
@@ -923,13 +923,13 @@ func (h *MFAHandler) isMethodAvailable(userID string, method MFAMethod) bool {
 
 // HandleMFAMethodSwitch allows users to switch between MFA methods
 func (h *MFAHandler) HandleMFAMethodSwitch() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		var request struct {
 			ChallengeID string `json:"challenge_id"`
 			NewMethod   string `json:"new_method"`
 		}
 
-		if err := c.Bind().JSON(&request); err != nil {
+		if err := c.BodyParser(&request); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 				"error":   true,
 				"message": "Invalid request format",
@@ -983,14 +983,14 @@ func (h *MFAHandler) HandleMFAMethodSwitch() fiber.Handler {
 
 // HandleEmergencyAccess handles emergency access requests
 func (h *MFAHandler) HandleEmergencyAccess() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		var request struct {
 			UserID        string `json:"user_id"`
 			EmergencyCode string `json:"emergency_code"`
 			Justification string `json:"justification"`
 		}
 
-		if err := c.Bind().JSON(&request); err != nil {
+		if err := c.BodyParser(&request); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 				"error":   true,
 				"message": "Invalid request format",
@@ -1033,13 +1033,13 @@ func (h *MFAHandler) HandleEmergencyAccess() fiber.Handler {
 
 // HandleMFAChallenge creates a new MFA challenge
 func (h *MFAHandler) HandleMFAChallenge() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		var request struct {
 			Method      string                 `json:"method"`
 			SessionData map[string]interface{} `json:"session_data"`
 		}
 
-		if err := c.Bind().JSON(&request); err != nil {
+		if err := c.BodyParser(&request); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 				"error":   true,
 				"message": "Invalid request format",
@@ -1078,13 +1078,13 @@ func (h *MFAHandler) HandleMFAChallenge() fiber.Handler {
 
 // HandleMFAValidation validates an MFA challenge response
 func (h *MFAHandler) HandleMFAValidation() fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		var request struct {
 			ChallengeID string                 `json:"challenge_id"`
 			Response    map[string]interface{} `json:"response"`
 		}
 
-		if err := c.Bind().JSON(&request); err != nil {
+		if err := c.BodyParser(&request); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{
 				"error":   true,
 				"message": "Invalid request format",

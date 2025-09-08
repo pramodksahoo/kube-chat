@@ -53,9 +53,9 @@ case $ENVIRONMENT in
 esac
 
 # Services to build (using arrays that work on both macOS bash 3.x and Linux bash 4.x+)
-SERVICES_NAMES=("api-gateway" "audit-service" "operator" "web")
-SERVICES_DOCKERFILES=("cmd/api-gateway/Dockerfile" "cmd/audit-service/Dockerfile" "Dockerfile" "web/Dockerfile")
-SERVICES_CONTEXTS=("." "." "." ".")
+SERVICES_NAMES=("api-gateway" "audit-service" "nlp-service" "operator" "web")
+SERVICES_DOCKERFILES=("cmd/api-gateway/Dockerfile" "cmd/audit-service/Dockerfile" "cmd/nlp-service/Dockerfile" "Dockerfile" "web/Dockerfile")
+SERVICES_CONTEXTS=("." "." "." "." ".")
 
 # Logging functions
 log_info() {

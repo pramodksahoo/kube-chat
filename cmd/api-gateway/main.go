@@ -6,15 +6,16 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/healthcheck"
-	"github.com/gofiber/fiber/v3/middleware/logger"
-	"github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/gofiber/contrib/websocket"
 
 	"github.com/pramodksahoo/kube-chat/pkg/audit"
 	"github.com/pramodksahoo/kube-chat/pkg/middleware"
@@ -54,10 +55,7 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 	// Create Fiber app with configuration
 	app := fiber.New(fiber.Config{
 		AppName:      "KubeChat API Gateway",
-		ErrorHandler: customErrorHandler,
-		IdleTimeout:  30 * time.Second,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ServerHeader: "KubeChat-Gateway/1.0",
 	})
 
 	// Initialize JWT service
@@ -139,16 +137,36 @@ func (gw *APIGateway) setupMiddleware() {
 		Format: "[${time}] ${status} - ${method} ${path} ${latency}\n",
 	}))
 
-	// CORS middleware
+	// CORS middleware - Fiber v2 format
+	corsOrigins := "*"
+	if len(gw.config.CORSOrigins) > 0 {
+		corsOrigins = strings.Join(gw.config.CORSOrigins, ",")
+	}
 	gw.app.Use(cors.New(cors.Config{
-		AllowOrigins: gw.config.CORSOrigins,
-		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowOrigins:     corsOrigins,
+		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowCredentials: true,
 	}))
 
 	// Health check middleware
-	gw.app.Use(healthcheck.New())
+	// Health check endpoint
+	gw.app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "healthy",
+			"service": "api-gateway",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+
+	// Readiness check endpoint
+	gw.app.Get("/ready", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "ready",
+			"service": "api-gateway",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
 
 	// Audit middleware (if enabled)
 	if gw.config.EnableAudit && gw.auditCollector != nil {
@@ -158,7 +176,7 @@ func (gw *APIGateway) setupMiddleware() {
 		auditConfig.ServiceVersion = "1.0.0"
 		
 		// Configure user context extractor to use JWT claims
-		auditConfig.UserContextExtractor = func(c fiber.Ctx) (*models.User, *models.SessionAuthContext, error) {
+		auditConfig.UserContextExtractor = func(c *fiber.Ctx) (*models.User, *models.SessionAuthContext, error) {
 			// Try to get user from JWT claims if authenticated
 			if userClaims := c.Locals("user"); userClaims != nil {
 				claims := userClaims.(*middleware.JWTClaims)
@@ -228,10 +246,23 @@ func (gw *APIGateway) setupAPIRoutes() {
 	sessions.Delete("/:sessionId", gw.handleDeleteSession)
 	sessions.Post("/:sessionId/messages", gw.handleSendMessage)
 
-	// WebSocket route for real-time chat (if enabled)
+	// WebSocket connections for real-time chat
+	ws := gw.app.Group("/ws")
 	if gw.config.EnableWebSocket {
-		api.Get("/chat/:sessionId", gw.handleWebSocketUpgrade)
+		// WebSocket upgrade middleware
+		ws.Use("/chat", func(c *fiber.Ctx) error {
+			// IsWebSocketUpgrade returns true if the client
+			// requested upgrade to the WebSocket protocol.
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
+		
+		ws.Get("/chat/:sessionId", websocket.New(gw.handleWebSocketConnection))
 	}
+
 
 	// Admin routes (admin role required)
 	admin := api.Group("/admin", gw.requireRole("admin"))
@@ -244,13 +275,13 @@ func (gw *APIGateway) setupAPIRoutes() {
 
 // Authentication handlers
 
-func (gw *APIGateway) handleLogin(c fiber.Ctx) error {
+func (gw *APIGateway) handleLogin(c *fiber.Ctx) error {
 	var req struct {
 		Provider    string `json:"provider"`
 		RedirectURL string `json:"redirect_url,omitempty"`
 	}
 
-	if err := c.Bind().JSON(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error":   true,
 			"message": "Invalid request body",
@@ -283,12 +314,12 @@ func (gw *APIGateway) handleLogin(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleCallback(c fiber.Ctx) error {
+func (gw *APIGateway) handleCallback(c *fiber.Ctx) error {
 	// Forward to auth middleware callback handler
 	return gw.authMiddleware.HandleCallback(c)
 }
 
-func (gw *APIGateway) handleLogout(c fiber.Ctx) error {
+func (gw *APIGateway) handleLogout(c *fiber.Ctx) error {
 	// Get user from context
 	userClaims := c.Locals("user").(*middleware.JWTClaims)
 	if userClaims == nil {
@@ -316,12 +347,12 @@ func (gw *APIGateway) handleLogout(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleRefresh(c fiber.Ctx) error {
+func (gw *APIGateway) handleRefresh(c *fiber.Ctx) error {
 	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
 
-	if err := c.Bind().JSON(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error":   true,
 			"message": "Invalid request body",
@@ -344,7 +375,7 @@ func (gw *APIGateway) handleRefresh(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleAuthFallback(c fiber.Ctx) error {
+func (gw *APIGateway) handleAuthFallback(c *fiber.Ctx) error {
 	if !gw.config.EnableSAML || gw.samlProvider == nil {
 		return c.Status(503).JSON(fiber.Map{
 			"error":   true,
@@ -357,7 +388,7 @@ func (gw *APIGateway) handleAuthFallback(c fiber.Ctx) error {
 
 // Profile handlers
 
-func (gw *APIGateway) handleGetProfile(c fiber.Ctx) error {
+func (gw *APIGateway) handleGetProfile(c *fiber.Ctx) error {
 	userClaims := c.Locals("user").(*middleware.JWTClaims)
 	user, err := gw.userService.GetUser(userClaims.UserID)
 	if err != nil {
@@ -370,7 +401,7 @@ func (gw *APIGateway) handleGetProfile(c fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-func (gw *APIGateway) handleUpdateProfile(c fiber.Ctx) error {
+func (gw *APIGateway) handleUpdateProfile(c *fiber.Ctx) error {
 	userClaims := c.Locals("user").(*middleware.JWTClaims)
 	user, err := gw.userService.GetUser(userClaims.UserID)
 	if err != nil {
@@ -385,7 +416,7 @@ func (gw *APIGateway) handleUpdateProfile(c fiber.Ctx) error {
 		Preferences models.UserPreferences  `json:"preferences,omitempty"`
 	}
 
-	if err := c.Bind().JSON(&updates); err != nil {
+	if err := c.BodyParser(&updates); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error":   true,
 			"message": "Invalid request body",
@@ -412,7 +443,7 @@ func (gw *APIGateway) handleUpdateProfile(c fiber.Ctx) error {
 
 // Session handlers (simplified - full implementation would be more complex)
 
-func (gw *APIGateway) handleCreateSession(c fiber.Ctx) error {
+func (gw *APIGateway) handleCreateSession(c *fiber.Ctx) error {
 	userClaims := c.Locals("user").(*middleware.JWTClaims)
 	
 	var req struct {
@@ -420,7 +451,7 @@ func (gw *APIGateway) handleCreateSession(c fiber.Ctx) error {
 		Namespace      string `json:"namespace"`
 	}
 
-	if err := c.Bind().JSON(&req); err != nil {
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error":   true,
 			"message": "Invalid request body",
@@ -454,7 +485,7 @@ func (gw *APIGateway) handleCreateSession(c fiber.Ctx) error {
 	return c.Status(201).JSON(session)
 }
 
-func (gw *APIGateway) handleListSessions(c fiber.Ctx) error {
+func (gw *APIGateway) handleListSessions(c *fiber.Ctx) error {
 	userClaims := c.Locals("user").(*middleware.JWTClaims)
 	sessions := gw.sessionManager.GetUserAuthenticatedSessions(userClaims.UserID)
 	
@@ -464,7 +495,7 @@ func (gw *APIGateway) handleListSessions(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleGetSession(c fiber.Ctx) error {
+func (gw *APIGateway) handleGetSession(c *fiber.Ctx) error {
 	sessionID := c.Params("sessionId")
 	session, err := gw.sessionManager.GetAuthenticatedSession(sessionID)
 	if err != nil {
@@ -486,12 +517,12 @@ func (gw *APIGateway) handleGetSession(c fiber.Ctx) error {
 	return c.JSON(session)
 }
 
-func (gw *APIGateway) handleUpdateSession(c fiber.Ctx) error {
+func (gw *APIGateway) handleUpdateSession(c *fiber.Ctx) error {
 	// Implementation for updating session (namespace, context, etc.)
 	return c.JSON(fiber.Map{"message": "Update session not implemented"})
 }
 
-func (gw *APIGateway) handleDeleteSession(c fiber.Ctx) error {
+func (gw *APIGateway) handleDeleteSession(c *fiber.Ctx) error {
 	sessionID := c.Params("sessionId")
 	if err := gw.sessionManager.DeleteSession(sessionID); err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -506,19 +537,83 @@ func (gw *APIGateway) handleDeleteSession(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleSendMessage(c fiber.Ctx) error {
+func (gw *APIGateway) handleSendMessage(c *fiber.Ctx) error {
 	// Implementation for sending messages to chat session
 	return c.JSON(fiber.Map{"message": "Send message not implemented"})
 }
 
-func (gw *APIGateway) handleWebSocketUpgrade(c fiber.Ctx) error {
-	// Implementation for WebSocket upgrade with authentication
-	return c.JSON(fiber.Map{"message": "WebSocket not implemented"})
+
+// WebSocket handler for real-time chat sessions
+func (gw *APIGateway) handleWebSocketConnection(c *websocket.Conn) {
+	sessionID := c.Params("sessionId")
+	
+	// Get user from authentication (should be set by middleware)
+	userClaims, ok := c.Locals("user").(*middleware.JWTClaims)
+	if !ok || userClaims == nil {
+		log.Printf("WebSocket connection rejected: no valid authentication for session %s", sessionID)
+		c.Close()
+		return
+	}
+
+	// Verify user has access to this session
+	session, err := gw.sessionManager.GetAuthenticatedSession(sessionID)
+	if err != nil || session.UserID != userClaims.UserID {
+		log.Printf("WebSocket connection rejected: user %s cannot access session %s", userClaims.UserID, sessionID)
+		c.Close()
+		return
+	}
+
+	log.Printf("WebSocket connection established for user %s, session %s", userClaims.UserID, sessionID)
+
+	defer func() {
+		log.Printf("WebSocket connection closed for user %s, session %s", userClaims.UserID, sessionID)
+		c.Close()
+	}()
+
+	// WebSocket message loop
+	for {
+		// Read message from client
+		messageType, msg, err := c.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket error for session %s: %v", sessionID, err)
+			}
+			break
+		}
+
+		// Process the message based on type
+		switch messageType {
+		case websocket.TextMessage:
+			log.Printf("Received message from session %s: %s", sessionID, string(msg))
+			
+			// Echo the message back (placeholder - implement actual chat logic)
+			response := map[string]interface{}{
+				"type":      "message",
+				"sessionId": sessionID,
+				"message":   string(msg),
+				"timestamp": time.Now().Unix(),
+				"user":      userClaims.UserID,
+			}
+			
+			if err := c.WriteJSON(response); err != nil {
+				log.Printf("Error sending WebSocket response: %v", err)
+				break
+			}
+
+		case websocket.BinaryMessage:
+			log.Printf("Received binary message from session %s (length: %d)", sessionID, len(msg))
+			// Handle binary messages if needed
+			
+		case websocket.CloseMessage:
+			log.Printf("Received close message from session %s", sessionID)
+			break
+		}
+	}
 }
 
 // Admin handlers
 
-func (gw *APIGateway) handleListUsers(c fiber.Ctx) error {
+func (gw *APIGateway) handleListUsers(c *fiber.Ctx) error {
 	users, err := gw.userService.ListUsers()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -533,7 +628,7 @@ func (gw *APIGateway) handleListUsers(c fiber.Ctx) error {
 	})
 }
 
-func (gw *APIGateway) handleGetUser(c fiber.Ctx) error {
+func (gw *APIGateway) handleGetUser(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 	user, err := gw.userService.GetUser(userID)
 	if err != nil {
@@ -546,17 +641,17 @@ func (gw *APIGateway) handleGetUser(c fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-func (gw *APIGateway) handleUpdateUser(c fiber.Ctx) error {
+func (gw *APIGateway) handleUpdateUser(c *fiber.Ctx) error {
 	// Implementation for admin user updates
 	return c.JSON(fiber.Map{"message": "Update user not implemented"})
 }
 
-func (gw *APIGateway) handleDeleteUser(c fiber.Ctx) error {
+func (gw *APIGateway) handleDeleteUser(c *fiber.Ctx) error {
 	// Implementation for admin user deletion
 	return c.JSON(fiber.Map{"message": "Delete user not implemented"})
 }
 
-func (gw *APIGateway) handleCleanupSessions(c fiber.Ctx) error {
+func (gw *APIGateway) handleCleanupSessions(c *fiber.Ctx) error {
 	expired := gw.sessionManager.CleanupExpiredSessions()
 	unauthenticated := gw.sessionManager.CleanupUnauthenticatedSessions()
 
@@ -570,7 +665,7 @@ func (gw *APIGateway) handleCleanupSessions(c fiber.Ctx) error {
 // Middleware helpers
 
 func (gw *APIGateway) requireRole(role string) fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		userClaims := c.Locals("user").(*middleware.JWTClaims)
 		if userClaims == nil {
 			return c.Status(401).JSON(fiber.Map{
@@ -592,18 +687,6 @@ func (gw *APIGateway) requireRole(role string) fiber.Handler {
 	}
 }
 
-// Error handler
-func customErrorHandler(c fiber.Ctx, err error) error {
-	code := fiber.StatusInternalServerError
-	if e, ok := err.(*fiber.Error); ok {
-		code = e.Code
-	}
-
-	return c.Status(code).JSON(fiber.Map{
-		"error":   true,
-		"message": err.Error(),
-	})
-}
 
 // Start starts the API Gateway server
 func (gw *APIGateway) Start() error {

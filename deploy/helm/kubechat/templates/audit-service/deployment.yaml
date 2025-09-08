@@ -39,11 +39,11 @@ spec:
         imagePullPolicy: {{ .Values.auditService.image.pullPolicy }}
         ports:
         - name: http
-          containerPort: {{ .Values.auditService.env.PORT | default 8082 }}
+          containerPort: 8081
           protocol: TCP
         env:
         - name: PORT
-          value: {{ .Values.auditService.env.PORT | default "8082" | quote }}
+          value: {{ .Values.auditService.env.PORT | default "8081" | quote }}
         - name: LOG_LEVEL
           value: {{ .Values.auditService.env.LOG_LEVEL | default "info" | quote }}
         - name: AUDIT_RETENTION_DAYS

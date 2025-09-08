@@ -1,5 +1,5 @@
 # KubeChat Phase 1 Model 1 Image Manifest
 # Version: dev
-# Generated: 2025-09-07 15:09:19 UTC
+# Generated: 2025-09-08 09:44:26 UTC
 # Registry: localhost:5001
 

@@ -7,7 +7,6 @@ replace github.com/pramodksahoo/kube-chat => ../../
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v2 v2.52.9
-	github.com/gofiber/fiber/v3 v3.0.0-rc.1
 	github.com/lib/pq v1.10.9
 	github.com/pramodksahoo/kube-chat v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
@@ -28,8 +27,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/gofiber/schema v1.6.0 // indirect
-	github.com/gofiber/utils/v2 v2.0.0-rc.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
@@ -52,13 +49,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/otp v1.5.0 // indirect
 	github.com/redis/go-redis/v9 v9.13.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/russellhaering/goxmldsig v1.4.0 // indirect
-	github.com/tinylib/msgp v1.3.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.65.0 // indirect
 	golang.org/x/crypto v0.41.0 // indirect

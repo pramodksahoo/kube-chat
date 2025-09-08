@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -925,7 +925,7 @@ func TestSendSAMLError(t *testing.T) {
 	provider := &SAMLProvider{}
 	
 	app := fiber.New()
-	app.Get("/test", func(c fiber.Ctx) error {
+	app.Get("/test", func(c *fiber.Ctx) error {
 		return provider.sendSAMLError(c, "TEST_ERROR", "Test error message", fiber.StatusBadRequest)
 	})
 
