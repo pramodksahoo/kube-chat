@@ -1,0 +1,156 @@
+{{- if .Values.apiGateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubechat.fullname" . }}-api-gateway
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+spec:
+  replicas: {{ .Values.apiGateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubechat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api-gateway
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kubechat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api-gateway
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubechat.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.apiGateway.securityContext | nindent 8 }}
+      containers:
+      - name: api-gateway
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.apiGateway.image.repository }}:{{ .Values.apiGateway.image.tag | default .Values.global.imageTag }}"
+        imagePullPolicy: {{ .Values.apiGateway.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.apiGateway.env.PORT | default 8080 }}
+          protocol: TCP
+        env:
+        - name: PORT
+          value: {{ .Values.apiGateway.env.PORT | default "8080" | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.apiGateway.env.LOG_LEVEL | default "info" | quote }}
+        - name: DATABASE_HOST
+          {{- if .Values.postgresql.enabled }}
+          value: "{{ include "kubechat.fullname" . }}-postgresql"
+          {{- else }}
+          value: {{ .Values.postgresql.external.host | quote }}
+          {{- end }}
+        - name: DATABASE_PORT
+          {{- if .Values.postgresql.enabled }}
+          value: "5432"
+          {{- else }}
+          value: {{ .Values.postgresql.external.port | quote }}
+          {{- end }}
+        - name: DATABASE_NAME
+          {{- if .Values.postgresql.enabled }}
+          value: {{ .Values.postgresql.auth.database | quote }}
+          {{- else }}
+          value: {{ .Values.postgresql.external.database | quote }}
+          {{- end }}
+        - name: DATABASE_USER
+          {{- if .Values.postgresql.enabled }}
+          value: "postgres"
+          {{- else }}
+          value: {{ .Values.postgresql.external.username | quote }}
+          {{- end }}
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              {{- if .Values.postgresql.enabled }}
+              name: {{ include "kubechat.fullname" . }}-postgresql
+              key: postgres-password
+              {{- else }}
+              name: {{ include "kubechat.fullname" . }}-postgresql-external
+              key: password
+              {{- end }}
+        - name: DATABASE_URL
+          {{- if .Values.postgresql.enabled }}
+          value: "postgres://postgres:$(DATABASE_PASSWORD)@{{ include "kubechat.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}?sslmode=disable"
+          {{- else }}
+          value: "postgres://{{ .Values.postgresql.external.username }}:$(DATABASE_PASSWORD)@{{ .Values.postgresql.external.host }}:{{ .Values.postgresql.external.port }}/{{ .Values.postgresql.external.database }}?sslmode=disable"
+          {{- end }}
+        - name: REDIS_HOST
+          {{- if .Values.redis.enabled }}
+          value: "{{ include "kubechat.fullname" . }}-redis-master"
+          {{- else }}
+          value: {{ .Values.redis.external.host | quote }}
+          {{- end }}
+        - name: REDIS_PORT
+          {{- if .Values.redis.enabled }}
+          value: "6379"
+          {{- else }}
+          value: {{ .Values.redis.external.port | quote }}
+          {{- end }}
+        - name: REDIS_ADDR
+          {{- if .Values.redis.enabled }}
+          value: "{{ include "kubechat.fullname" . }}-redis-master:6379"
+          {{- else }}
+          value: "{{ .Values.redis.external.host }}:{{ .Values.redis.external.port }}"
+          {{- end }}
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              {{- if .Values.redis.enabled }}
+              name: {{ include "kubechat.fullname" . }}-redis
+              key: redis-password
+              {{- else }}
+              name: {{ include "kubechat.fullname" . }}-redis-external
+              key: password
+              {{- end }}
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "kubechat.fullname" . }}-auth
+              key: jwt-secret
+        - name: AUDIT_SERVICE_URL
+          {{- if .Values.auditService.enabled }}
+          value: "http://{{ include "kubechat.fullname" . }}-audit-service:{{ .Values.auditService.service.port }}"
+          {{- else }}
+          value: ""
+          {{- end }}
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if .Values.apiGateway.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.apiGateway.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.apiGateway.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.apiGateway.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.apiGateway.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.apiGateway.securityContext | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

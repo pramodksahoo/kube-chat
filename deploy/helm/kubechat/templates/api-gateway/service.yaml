@@ -1,0 +1,23 @@
+{{- if .Values.apiGateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubechat.fullname" . }}-api-gateway
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+  {{- with .Values.apiGateway.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.apiGateway.service.type }}
+  ports:
+  - port: {{ .Values.apiGateway.service.port }}
+    targetPort: {{ .Values.apiGateway.service.targetPort | default "http" }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "kubechat.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+{{- end }}

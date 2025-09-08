@@ -19,7 +19,7 @@ For detailed NLP usage instructions, see [NLP User Guide](../user-guides/nlp-usa
 ## ChatSession Resource
 
 ### Group and Version
-- **Group**: `kubechat.io`
+- **Group**: `kubechat.dev`
 - **Version**: `v1`
 - **Kind**: `ChatSession`
 - **Plural**: `chatsessions`
@@ -193,7 +193,7 @@ The ChatSession status includes standard Kubernetes conditions:
 ### Basic ChatSession with NLP Processing
 
 ```yaml
-apiVersion: kubechat.io/v1
+apiVersion: kubechat.dev/v1
 kind: ChatSession
 metadata:
   name: user-session-123
@@ -295,7 +295,7 @@ status:
 ### Destructive Operation with Confirmation
 
 ```yaml
-apiVersion: kubechat.io/v1
+apiVersion: kubechat.dev/v1
 kind: ChatSession
 metadata:
   name: dangerous-operation
@@ -375,13 +375,13 @@ kind: ClusterRole
 metadata:
   name: chatsession-controller
 rules:
-- apiGroups: ["kubechat.io"]
+- apiGroups: ["kubechat.dev"]
   resources: ["chatsessions"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-- apiGroups: ["kubechat.io"]
+- apiGroups: ["kubechat.dev"]
   resources: ["chatsessions/status"]
   verbs: ["get", "update", "patch"]
-- apiGroups: ["kubechat.io"]
+- apiGroups: ["kubechat.dev"]
   resources: ["chatsessions/finalizers"]  
   verbs: ["update"]
 - apiGroups: [""]

@@ -28,11 +28,11 @@ export interface UseExecutionStatusReturn {
   retryConnection: () => void;
 }
 
-const WS_BASE_URL = process.env.NODE_ENV === 'development' 
-  ? 'ws://localhost:8080' 
-  : window.location.protocol === 'https:' 
+const WS_BASE_URL = typeof window !== 'undefined'
+  ? window.location.protocol === 'https:' 
     ? `wss://${window.location.host}` 
-    : `ws://${window.location.host}`;
+    : `ws://${window.location.host}`
+  : 'ws://localhost';
 
 export const useExecutionStatus = ({
   executionId: initialExecutionId,

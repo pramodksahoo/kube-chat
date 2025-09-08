@@ -1,0 +1,97 @@
+{{- if and .Values.operator.enabled .Values.operator.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubechat.fullname" . }}-operator
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+rules:
+# Core Kubernetes resources
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps", "secrets", "namespaces"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# KubeChat Custom Resources
+- apiGroups: ["kubechat.ai"]
+  resources: ["chatsessions", "kubernetescommands", "auditevents"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["kubechat.ai"]
+  resources: ["chatsessions/status", "kubernetescommands/status", "auditevents/status"]
+  verbs: ["get", "update", "patch"]
+- apiGroups: ["kubechat.ai"]
+  resources: ["chatsessions/finalizers", "kubernetescommands/finalizers", "auditevents/finalizers"]
+  verbs: ["update"]
+# Events for status updates
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+# Metrics and monitoring
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+# Admission webhooks
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubechat.fullname" . }}-operator
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubechat.fullname" . }}-operator
+subjects:
+- kind: ServiceAccount
+  name: {{ include "kubechat.operatorServiceAccountName" . }}
+  namespace: {{ include "kubechat.namespace" . }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kubechat.fullname" . }}-operator-leader-election
+  namespace: {{ include "kubechat.namespace" . }}
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kubechat.fullname" . }}-operator-leader-election
+  namespace: {{ include "kubechat.namespace" . }}
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kubechat.fullname" . }}-operator-leader-election
+subjects:
+- kind: ServiceAccount
+  name: {{ include "kubechat.operatorServiceAccountName" . }}
+  namespace: {{ include "kubechat.namespace" . }}
+{{- end }}

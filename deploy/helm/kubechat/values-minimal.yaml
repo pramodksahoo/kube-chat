@@ -1,0 +1,352 @@
+# KubeChat Helm Chart - Minimal Resource Configuration
+# Ultra-minimal resource allocation for constrained development environments
+
+# Global configuration for minimal deployment
+global:
+  # Registry configuration
+  imageRegistry: "localhost:5000"
+  imageTag: "minimal"
+  imagePullSecrets: []
+  
+  # Environment settings
+  environment: "minimal"
+  debug: false
+  logLevel: "warn"
+  
+  # Namespace configuration
+  namespace: "kubechat-dev"
+
+# Deployment configuration - Minimal
+deployment:
+  mode: "minimal"
+  airgap: false
+  replicaCount: 1
+
+# Resource configuration - Ultra minimal
+resources:
+  minimal: true
+  ultraMinimal: true
+  
+  # API Gateway resources - Absolute minimum
+  apiGateway:
+    limits:
+      cpu: "50m"
+      memory: "64Mi"
+    requests:
+      cpu: "25m"
+      memory: "32Mi"
+  
+  # Kubernetes Operator resources - Absolute minimum
+  operator:
+    limits:
+      cpu: "50m"
+      memory: "64Mi"
+    requests:
+      cpu: "25m"
+      memory: "32Mi"
+  
+  # Audit Service resources - Absolute minimum
+  auditService:
+    limits:
+      cpu: "50m"
+      memory: "64Mi"
+    requests:
+      cpu: "25m"
+      memory: "32Mi"
+  
+  # Web Frontend resources - Absolute minimum
+  web:
+    limits:
+      cpu: "25m"
+      memory: "32Mi"
+    requests:
+      cpu: "10m"
+      memory: "16Mi"
+
+# API Gateway configuration - Minimal
+apiGateway:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/api-gateway"
+    tag: "minimal"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "ClusterIP"
+    port: 8080
+  
+  # Minimal configuration
+  config:
+    corsEnabled: true
+    corsOrigins: ["*"]
+    rateLimitEnabled: false
+    metricsEnabled: false  # Disabled for minimal resources
+    healthCheckEnabled: true
+    
+    # Minimal performance settings
+    maxConnections: 10
+    timeout: "5s"
+    keepAlive: false
+
+# Kubernetes Operator configuration - Minimal
+operator:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/operator"
+    tag: "minimal"
+    pullPolicy: "IfNotPresent"
+  
+  # Minimal RBAC
+  rbac:
+    create: true
+    clusterWide: false
+  
+  # Disable resource-intensive features
+  webhook:
+    enabled: false
+  
+  metrics:
+    enabled: false  # Disabled for minimal resources
+  
+  # Minimal operator configuration
+  config:
+    reconcileInterval: "60s"  # Slower reconciliation
+    maxConcurrentReconciles: 1
+    leaderElection: false
+
+# Audit Service configuration - Minimal
+auditService:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/audit-service"
+    tag: "minimal"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "ClusterIP"
+    port: 8082
+  
+  # In-memory database for minimal deployment
+  database:
+    type: "sqlite"
+    path: "/tmp/audit.db"
+    # No external database for minimal setup
+  
+  # Minimal audit configuration
+  config:
+    retentionDays: 1  # Very short retention
+    batchSize: 10     # Small batches
+    flushInterval: "30s"
+    
+    # Disable resource-intensive features
+    checksumValidation: false
+    auditChain: false
+    compression: false
+
+# Web Frontend configuration - Minimal
+web:
+  enabled: true
+  image:
+    repository: "localhost:5000/kubechat/web"
+    tag: "minimal"
+    pullPolicy: "IfNotPresent"
+  
+  service:
+    type: "NodePort"  # Use NodePort to avoid ingress controller
+    port: 80
+    nodePort: 30080
+  
+  # No ingress for minimal deployment
+  ingress:
+    enabled: false
+
+# PostgreSQL - Disabled for minimal deployment
+postgresql:
+  enabled: false
+
+# Redis - Disabled for minimal deployment  
+redis:
+  enabled: false
+
+# Security configuration - Minimal
+security:
+  podSecurityPolicy:
+    enabled: false
+  
+  networkPolicy:
+    enabled: false
+  
+  rbac:
+    create: true
+
+# Monitoring - Disabled for minimal resources
+monitoring:
+  prometheus:
+    enabled: false
+  
+  jaeger:
+    enabled: false
+  
+  grafana:
+    enabled: false
+
+# Backup - Disabled for minimal deployment
+backup:
+  enabled: false
+
+# External services - Disabled for minimal deployment
+externalServices:
+  enabled: false
+
+# Minimal utilities only
+minimalUtils:
+  # Essential health checks only
+  healthCheck:
+    enabled: true
+    interval: "60s"
+  
+  # Basic logging
+  logging:
+    enabled: true
+    level: "warn"
+    format: "text"
+
+# Testing - Minimal test suite
+testing:
+  minimal: true
+  
+  # Basic health tests only
+  healthTests:
+    enabled: true
+  
+  # Disable resource-intensive tests
+  performanceTests:
+    enabled: false
+  
+  loadTests:
+    enabled: false
+
+# Environment variables - Minimal configuration
+env:
+  # Deployment mode
+  DEPLOYMENT_MODE: "minimal"
+  
+  # Resource optimization
+  MINIMAL_RESOURCES: "true"
+  DISABLE_METRICS: "true"
+  DISABLE_TRACING: "true"
+  
+  # Performance tuning
+  GO_MAX_PROCS: "1"
+  GOMAXPROCS: "1"
+
+# Horizontal Pod Autoscaler - Disabled
+hpa:
+  enabled: false
+
+# Pod Disruption Budget - Disabled
+pdb:
+  enabled: false
+
+# Service Mesh - Disabled
+serviceMesh:
+  enabled: false
+
+# Advanced features - All disabled for minimal deployment
+advancedFeatures:
+  enabled: false
+  
+  # AI/ML features
+  nlp:
+    enabled: false
+  
+  # Advanced security
+  advancedSecurity:
+    enabled: false
+  
+  # Advanced monitoring
+  advancedMonitoring:
+    enabled: false
+
+# Node selectors and tolerations - None for minimal
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Init containers - Disabled
+initContainers: []
+
+# Sidecar containers - Disabled  
+sidecars: []
+
+# Volume claims - Minimal ephemeral storage only
+persistence:
+  enabled: false
+
+# Service accounts - Minimal
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations - Minimal
+podAnnotations: {}
+
+# Pod security context - Basic
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  fsGroup: 65534
+
+# Security context - Basic
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65534
+
+# Liveness and readiness probes - Basic
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Startup probes - Disabled for minimal resources
+startupProbe:
+  enabled: false
+
+# Resource quotas for namespace
+resourceQuota:
+  enabled: true
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "1000m"
+    limits.memory: "1Gi"
+    persistentvolumeclaims: "0"
+    services: "10"
+    pods: "10"
+
+# Limit ranges
+limitRange:
+  enabled: true
+  limits:
+    - default:
+        cpu: "100m"
+        memory: "128Mi"
+      defaultRequest:
+        cpu: "50m"
+        memory: "64Mi"
+      type: "Container"
