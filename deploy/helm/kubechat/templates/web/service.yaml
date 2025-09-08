@@ -1,0 +1,23 @@
+{{- if .Values.web.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubechat.fullname" . }}-web
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+  {{- with .Values.web.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.web.service.type }}
+  ports:
+  - port: {{ .Values.web.service.port }}
+    targetPort: {{ .Values.web.service.targetPort | default "http" }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "kubechat.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+{{- end }}

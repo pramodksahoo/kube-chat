@@ -1,0 +1,92 @@
+{{- if .Values.web.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubechat.fullname" . }}-web
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubechat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kubechat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubechat.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.web.securityContext | nindent 8 }}
+      containers:
+      - name: web
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Values.global.imageTag }}"
+        imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.web.service.targetPort | default 8083 }}
+          protocol: TCP
+        env:
+        - name: API_GATEWAY_SERVICE
+          {{- if .Values.apiGateway.enabled }}
+          value: "{{ include "kubechat.fullname" . }}-api-gateway"
+          {{- else }}
+          value: "api-gateway"
+          {{- end }}
+        - name: API_GATEWAY_PORT
+          {{- if .Values.apiGateway.enabled }}
+          value: "{{ .Values.apiGateway.service.port }}"
+          {{- else }}
+          value: "8080"
+          {{- end }}
+        - name: API_GATEWAY_URL
+          {{- if .Values.apiGateway.enabled }}
+          value: "http://{{ include "kubechat.fullname" . }}-api-gateway:{{ .Values.apiGateway.service.port }}"
+          {{- else }}
+          value: ""
+          {{- end }}
+        - name: NODE_ENV
+          value: "production"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.web.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.web.securityContext | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

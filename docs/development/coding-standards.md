@@ -298,7 +298,7 @@ export function useWebSocket(sessionId: string): {
   }, []);
   
   useEffect(() => {
-    const ws = new WebSocket(`wss://api.kubechat.io/chat/${sessionId}`);
+    const ws = new WebSocket(`wss://api.kubechat.dev/chat/${sessionId}`);
     socketRef.current = ws;
     
     ws.onopen = () => {

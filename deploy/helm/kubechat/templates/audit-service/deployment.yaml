@@ -1,0 +1,114 @@
+{{- if .Values.auditService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubechat.fullname" . }}-audit-service
+  labels:
+    {{- include "kubechat.labels" . | nindent 4 }}
+    app.kubernetes.io/component: audit-service
+spec:
+  replicas: {{ .Values.auditService.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubechat.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: audit-service
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kubechat.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: audit-service
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubechat.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.auditService.securityContext | nindent 8 }}
+      containers:
+      - name: audit-service
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.auditService.image.repository }}:{{ .Values.auditService.image.tag | default .Values.global.imageTag }}"
+        imagePullPolicy: {{ .Values.auditService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.auditService.env.PORT | default 8082 }}
+          protocol: TCP
+        env:
+        - name: PORT
+          value: {{ .Values.auditService.env.PORT | default "8082" | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.auditService.env.LOG_LEVEL | default "info" | quote }}
+        - name: AUDIT_RETENTION_DAYS
+          value: {{ .Values.auditService.env.AUDIT_RETENTION_DAYS | default "90" | quote }}
+        - name: DATABASE_HOST
+          {{- if .Values.postgresql.enabled }}
+          value: "{{ include "kubechat.fullname" . }}-postgresql"
+          {{- else }}
+          value: {{ .Values.postgresql.external.host | quote }}
+          {{- end }}
+        - name: DATABASE_PORT
+          {{- if .Values.postgresql.enabled }}
+          value: "5432"
+          {{- else }}
+          value: {{ .Values.postgresql.external.port | quote }}
+          {{- end }}
+        - name: DATABASE_NAME
+          value: "kubechat_audit"
+        - name: DATABASE_USER
+          {{- if .Values.postgresql.enabled }}
+          value: "postgres"
+          {{- else }}
+          value: {{ .Values.postgresql.external.username | quote }}
+          {{- end }}
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              {{- if .Values.postgresql.enabled }}
+              name: {{ include "kubechat.fullname" . }}-postgresql
+              key: postgres-password
+              {{- else }}
+              name: {{ include "kubechat.fullname" . }}-postgresql-external
+              key: password
+              {{- end }}
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "kubechat.fullname" . }}-audit
+              key: encryption-key
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if .Values.auditService.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.auditService.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.auditService.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.auditService.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.auditService.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.auditService.securityContext | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
