@@ -94,7 +94,7 @@ func NewAPIGateway(config Config) (*APIGateway, error) {
 	if config.EnableAudit {
 		// Create audit storage
 		auditStorage, err := audit.NewPostgreSQLAuditStorage(
-			getEnv("AUDIT_DATABASE_URL", "postgres://user:password@localhost/kubechat_audit?sslmode=disable"), 
+			getEnv("DATABASE_URL", "postgres://postgres:password@postgres-postgresql:5432/kubechat_audit?sslmode=disable"), 
 			365*7, // 7 years retention
 		)
 		if err != nil {

@@ -125,7 +125,7 @@ optional_headers:
     },
     "request_id": "uuid",
     "timestamp": "2024-01-01T00:00:00Z",
-    "documentation_url": "https://docs.kubechat.io/errors/validation_failed"
+    "documentation_url": "https://docs.kubechat.dev/errors/validation_failed"
   }
 }
 ```

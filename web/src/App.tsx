@@ -8,7 +8,7 @@ function App() {
   return (
     <WebSocketProvider
       config={{
-        url: 'ws://localhost:8080/api/v1/chat',
+        url: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/chat`,
         token: token || undefined,
         reconnectAttempts: 5,
         reconnectInterval: 3000,

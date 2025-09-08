@@ -1,0 +1,35 @@
+apiVersion: v2
+name: kubechat
+description: KubeChat Phase 1 Model 1 - Kubernetes Natural Language Management Platform
+type: application
+version: 0.1.0
+appVersion: "dev"
+
+home: https://github.com/pramodksahoo/kube-chat
+sources:
+  - https://github.com/pramodksahoo/kube-chat
+
+maintainers:
+  - name: KubeChat Development Team
+    email: hello@kubechat.dev
+
+keywords:
+  - kubernetes
+  - natural-language
+  - kubectl
+  - chat
+  - ai
+  - nlp
+  - on-premises
+
+annotations:
+  category: Development
+  licenses: Apache-2.0
+
+# Phase 1 Model 1 - Dependencies managed separately by setup script
+
+# KubeQuery compatibility
+kubeVersion: ">=1.25.0-0"
+
+# Icon for Helm repository display
+icon: https://raw.githubusercontent.com/pramodksahoo/kube-chat/master/docs/assets/kubechat-icon.png

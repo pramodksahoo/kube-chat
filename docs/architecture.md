@@ -359,9 +359,9 @@ info:
   version: 1.0.0
   description: Enterprise Kubernetes Natural Language Management Platform API
 servers:
-  - url: https://api.kubechat.io
+  - url: https://api.kubechat.dev
     description: Production API server
-  - url: https://staging-api.kubechat.io  
+  - url: https://staging-api.kubechat.dev  
     description: Staging API server
 
 security:
@@ -826,12 +826,12 @@ components:
 The real-time functionality uses WebSocket connections for both chat and resource monitoring:
 
 **Chat WebSocket Events:**
-- **Connection**: `wss://api.kubechat.io/chat/{sessionId}?token={jwt}`
+- **Connection**: `wss://api.kubechat.dev/chat/{sessionId}?token={jwt}`
 - **Message Format**: JSON with `type` and `payload` properties
 - **Events**: `message_sent`, `command_generated`, `command_executed`, `session_updated`, `error`
 
 **Resource Monitoring WebSocket Events:**
-- **Connection**: `wss://api.kubechat.io/resources/{sessionId}?token={jwt}`
+- **Connection**: `wss://api.kubechat.dev/resources/{sessionId}?token={jwt}`
 - **Message Format**: JSON with `type` and `payload` properties
 - **Events**: 
   - `resource_updated`: Kubernetes resource status changed
@@ -1390,7 +1390,7 @@ kubechat-helm/
 **Installation Command:**
 ```bash
 # Add KubeChat Helm repository
-helm repo add kubechat https://charts.kubechat.io
+helm repo add kubechat https://charts.kubechat.dev
 helm repo update
 
 # Install with custom values
